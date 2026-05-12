@@ -7,6 +7,13 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Projektplan – ERP Implementation v7</title>
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Projektplan">
+    <link rel="apple-touch-icon" href="/icon-192.png">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -177,6 +184,35 @@
         .help-panel p, .help-panel li { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
         .help-panel ul { padding-left: 1.2rem; }
         .help-panel .author { font-size: 0.75rem; color: var(--muted); margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body { padding: 0.5rem; }
+            .header h1 { font-size: 1.2rem; }
+            .header p { font-size: 0.75rem; }
+            .filter-bar { gap: 0.4rem; font-size: 0.75rem; }
+            .filter-bar select, .filter-bar input { font-size: 0.75rem; padding: 0.3rem 0.5rem; max-width: 110px; }
+            .filter-bar label { font-size: 0.7rem; }
+            .btn { font-size: 0.75rem; padding: 0.35rem 0.6rem; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .kpi-value { font-size: 1.2rem; }
+            .kpi-label { font-size: 0.7rem; }
+            .tree-header, .tree-row { grid-template-columns: 1fr 55px 55px 55px 90px !important; font-size: 0.75rem; }
+            .tree-header span:nth-child(n+5):nth-child(-n+6),
+            .tree-row > span:nth-child(n+5):nth-child(-n+6) { display: none; }
+            .tree-row.level-1 { padding-left: 0.75rem; }
+            .gantt { min-width: 600px; }
+            .gantt-row { grid-template-columns: 140px 50px 1fr; }
+            .gantt-header { grid-template-columns: 140px 50px 1fr; }
+            .gantt-label { font-size: 0.7rem; }
+            .res-bar-row { grid-template-columns: 120px 1fr 60px; }
+            .res-bar-label { font-size: 0.7rem; }
+            .help-panel { padding: 1rem; }
+            .help-panel h3 { font-size: 0.85rem; }
+            .help-panel p, .help-panel li { font-size: 0.78rem; }
+            #userInfo { top: 0.3rem; right: 0.3rem; padding: 0.3rem 0.5rem; font-size: 0.7rem; }
+            #userInfo img { width: 22px; height: 22px; }
+        }
     </style>
 </head>
 <body>
@@ -2304,6 +2340,11 @@ let currentUser = null;
 let currentProjectId = null;
 let projectFilter = 'mine';
 let dashboardInitialized = false;
+
+// --- PWA Service Worker ---
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
 
 // --- Auth ---
 firebase.auth().onAuthStateChanged(user => {
