@@ -1,0 +1,2232 @@
+﻿<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Projektplan – ERP Implementation v7</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --surface: #334155;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --border: #475569;
+            --blue: #3b82f6;
+            --green: #10b981;
+            --amber: #f59e0b;
+            --red: #ef4444;
+            --purple: #8b5cf6;
+            --cyan: #06b6d4;
+            --pink: #ec4899;
+            --orange: #f97316;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 1.5rem; min-height: 100vh; }
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        .header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; }
+        .header h1 { font-size: 1.8rem; background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: var(--muted); font-size: 0.9rem; }
+
+        /* Filter bar */
+        .filter-bar { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .filter-bar label { font-size: 0.85rem; color: var(--muted); }
+        .filter-bar select, .filter-bar input { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.85rem; }
+        .filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--blue); }
+        .filter-bar input[type="date"] { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.85rem; font-family: inherit; color-scheme: dark; }
+        .btn { background: var(--blue); color: white; border: none; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+        .btn:hover { filter: brightness(1.1); }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+        .btn-ghost:hover { border-color: var(--blue); color: var(--text); }
+
+        /* KPI Cards */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+        .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+        .kpi-value { font-size: 1.6rem; font-weight: 700; }
+        .kpi-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+        .kpi.clickable { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+        .kpi.clickable:hover { border-color: var(--red); }
+        .kpi.active { border-color: var(--red); box-shadow: 0 0 0 2px rgba(239,68,68,0.3); }
+
+        /* Phase tree */
+        .tree-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; max-height: 70vh; overflow-y: auto; }
+        .tree-section h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--cyan); display: flex; align-items: center; gap: 0.5rem; }
+        .tree-header { display: grid; grid-template-columns: 2.5fr 70px 70px 70px 50px 120px 90px 100px 130px; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+        .tree-header.with-dates { grid-template-columns: 2.5fr 70px 70px 70px 50px 80px 80px 120px 90px 100px 130px; }
+        .tree-header.with-id { grid-template-columns: 60px 2.5fr 70px 70px 70px 50px 120px 90px 100px 130px; }
+        .tree-header.with-id.with-dates { grid-template-columns: 60px 2.5fr 70px 70px 70px 50px 80px 80px 120px 90px 100px 130px; }
+        .tree-row { display: grid; grid-template-columns: 2.5fr 70px 70px 70px 50px 120px 90px 100px 130px; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid rgba(71,85,105,0.4); font-size: 0.85rem; align-items: center; transition: background 0.15s; }
+        .tree-row.with-dates { grid-template-columns: 2.5fr 70px 70px 70px 50px 80px 80px 120px 90px 100px 130px; }
+        .tree-row.with-id { grid-template-columns: 60px 2.5fr 70px 70px 70px 50px 120px 90px 100px 130px; }
+        .tree-row.with-id.with-dates { grid-template-columns: 60px 2.5fr 70px 70px 70px 50px 80px 80px 120px 90px 100px 130px; }
+        .id-cell { font-size: 0.7rem; color: var(--muted); font-family: monospace; }
+        .status-cell { font-size: 0.7rem; color: var(--muted); }
+        .start-overdue-badge { display: inline-block; font-size: 0.65rem; background: rgba(251,146,60,0.2); color: #fb923c; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+        .date-cell { font-size: 0.75rem; color: var(--muted); }
+        .tree-row:hover { background: rgba(59,130,246,0.05); }
+        .tree-row.level-0 { font-weight: 600; font-size: 0.9rem; }
+        .tree-row.level-1 { padding-left: 1.5rem; }
+        .tree-row.level-2 { padding-left: 3rem; font-size: 0.8rem; color: var(--muted); }
+        .tree-row.hidden { display: none; }
+        .toggle-btn { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 0.3rem; }
+        .toggle-btn .arrow { display: inline-block; transition: transform 0.2s; font-size: 0.7rem; }
+        .toggle-btn .arrow.collapsed { transform: rotate(-90deg); }
+        .progress-bar-mini { height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; flex: 1; }
+        .progress-bar-mini .fill { height: 100%; border-radius: 3px; }
+        .progress-cell { display: flex; align-items: center; gap: 0.4rem; }
+        .pct-text { font-size: 0.75rem; color: var(--muted); min-width: 32px; }
+        .resource-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; background: rgba(59,130,246,0.15); color: var(--blue); }
+
+        /* Gantt */
+        .gantt-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; overflow-x: auto; }
+        .gantt-section h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--cyan); display: flex; align-items: center; gap: 0.5rem; }
+        .gantt { min-width: 1000px; position: relative; }
+        .gantt-header { display: grid; grid-template-columns: 220px 70px 1fr; margin-bottom: 0.5rem; }
+        .gantt-months { display: flex; }
+        .gantt-month { flex: 1; text-align: center; font-size: 0.7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; padding: 0.2rem 0; border-left: 1px solid var(--border); }
+        .gantt-month:first-child { border-left: none; }
+        .gantt-row { display: grid; grid-template-columns: 220px 70px 1fr; align-items: center; margin-bottom: 4px; }
+        .gantt-status { font-size: 0.6rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0.4rem; }
+        .gantt-row.hidden { display: none; }
+        .gantt-label { font-size: 0.8rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0.75rem; }
+        .gantt-label.level-0 { font-weight: 700; }
+        .gantt-label.level-1 { padding-left: 1rem; font-size: 0.75rem; }
+        .gantt-track { position: relative; height: 22px; background: var(--surface); border-radius: 3px; }
+        .gantt-bar { position: absolute; top: 2px; height: 18px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 600; color: white; min-width: 2px; transition: all 0.2s; cursor: default; }
+        .gantt-bar:hover { filter: brightness(1.2); transform: scaleY(1.2); z-index: 10; }
+        .gantt-bar .tooltip { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; white-space: nowrap; font-size: 0.75rem; z-index: 100; color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .gantt-bar:hover .tooltip { display: block; }
+        .gantt-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--red); z-index: 5; opacity: 0.7; }
+        .gantt-today::before { content: '▼'; position: absolute; top: -10px; left: -4px; color: var(--red); font-size: 0.55rem; }
+
+        .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+        .legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--muted); }
+        .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+        /* Search */
+        .filter-bar input[type="text"] { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.85rem; min-width: 160px; }
+        .filter-bar input[type="text"]::placeholder { color: var(--muted); }
+
+        /* Overdue */
+        .tree-row.overdue { border-left: 3px solid var(--red); padding-left: calc(1.5rem - 3px); }
+        .tree-row.level-0.overdue { padding-left: 0; border-left: 3px solid var(--red); }
+        .overdue-badge { display: inline-block; font-size: 0.65rem; background: rgba(239,68,68,0.2); color: var(--red); padding: 1px 5px; border-radius: 3px; margin-left: 0.4rem; font-weight: 600; }
+        .inprogress-badge { display: inline-block; font-size: 0.65rem; background: rgba(34,197,94,0.2); color: var(--green); padding: 1px 5px; border-radius: 3px; margin-left: 0.4rem; font-weight: 600; }
+
+        /* Resource chart */
+        .res-chart-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+        .res-chart-section h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--cyan); }
+        .res-bar-row { display: grid; grid-template-columns: 180px 1fr 90px; gap: 0.5rem; align-items: center; margin-bottom: 6px; }
+        .res-bar-label { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .res-bar-track { height: 18px; background: var(--surface); border-radius: 3px; position: relative; overflow: hidden; }
+        .res-bar-spent { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 600; color: white; }
+        .res-bar-est { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; opacity: 0.25; }
+        .res-bar-text { font-size: 0.75rem; color: var(--muted); }
+
+        /* Heatmap */
+        .heatmap-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; overflow-x: auto; }
+        .heatmap-section h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--cyan); }
+        .heatmap-table { border-collapse: collapse; width: 100%; min-width: 700px; }
+        .heatmap-table th, .heatmap-table td { padding: 4px 8px; text-align: center; font-size: 0.75rem; border: 1px solid var(--border); }
+        .heatmap-table th { color: var(--muted); font-weight: 600; text-transform: uppercase; }
+        .heatmap-table td.res-name { text-align: left; font-weight: 600; color: var(--text); min-width: 60px; }
+        .heatmap-cell { border-radius: 3px; min-width: 40px; }
+
+        /* Dependencies */
+        .dep-badge { display: inline-block; font-size: 0.6rem; background: rgba(139,92,246,0.2); color: var(--purple); padding: 1px 4px; border-radius: 3px; margin-left: 0.3rem; cursor: help; }
+        .gantt-deps-svg { position: absolute; top: 0; left: 290px; right: 0; bottom: 0; pointer-events: none; z-index: 6; }
+        .gantt-wrapper { position: relative; }
+
+        /* Dep Gantt */
+        .dep-gantt-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; overflow-x: auto; }
+        .dep-gantt-section h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--purple); }
+        .dep-gantt-row { display: grid; grid-template-columns: 280px 1fr; align-items: center; margin-bottom: 4px; }
+        .dep-gantt-label { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0.5rem; }
+        .dep-gantt-label .issue { color: var(--red); font-weight: 700; margin-left: 0.3rem; font-size: 0.7rem; }
+        .dep-gantt-track { position: relative; height: 20px; background: var(--surface); border-radius: 3px; }
+        .dep-gantt-bar { position: absolute; top: 2px; height: 16px; border-radius: 3px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; }
+        .dep-gantt-bar.predecessor { opacity: 0.5; }
+        .dep-gantt-bar.overlap-zone { background: rgba(239,68,68,0.25); border: 1px dashed var(--red); top: 0; height: 20px; border-radius: 0; }
+        .dep-gantt-arrow { position: absolute; top: 9px; height: 2px; background: var(--purple); opacity: 0.6; }
+        .dep-gantt-arrow::after { content: '\25B6'; position: absolute; right: -6px; top: -5px; font-size: 0.5rem; color: var(--purple); }
+        .dep-summary { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+        .dep-summary .count-ok { color: var(--green); font-weight: 600; }
+        .dep-summary .count-issue { color: var(--red); font-weight: 600; }
+
+        /* Collapsible sections */
+        .kpi-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+        .kpi-section h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--cyan); }
+        .sec-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 0.5rem; }
+        .sec-toggle::before { content: '\25BC'; font-size: 0.55rem; margin-right: 0.4rem; display: inline-block; transition: transform 0.15s; color: var(--muted); }
+        .sec-toggle.closed::before { transform: rotate(-90deg); }
+        .sec-body.closed { display: none; }
+
+        /* Help panel */
+        .help-panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; display: none; }
+        .help-panel.visible { display: block; }
+        .help-panel h2 { font-size: 1.1rem; color: var(--cyan); margin-bottom: 0.75rem; }
+        .help-panel h3 { font-size: 0.95rem; color: var(--text); margin: 0.75rem 0 0.3rem; }
+        .help-panel p, .help-panel li { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+        .help-panel ul { padding-left: 1.2rem; }
+        .help-panel .author { font-size: 0.75rem; color: var(--muted); margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>Projektplan – ERP Implementation</h1>
+            <p>BC/TRIMIT Implementering · Interaktiv Gantt med ressourcefilter</p>
+        </div>
+        <div style="text-align:right;">
+            <p>Opdateret: 6. maj 2026</p>
+            <p id="dataSourceInfo" style="font-size:0.8rem;color:var(--muted)">📊 Demo data</p>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <label>Resource:</label>
+        <select id="resourceFilter">
+            <option value="">Alle ressourcer</option>
+        </select>
+        <label>Fase:</label>
+        <select id="phaseFilter">
+            <option value="">Alle faser</option>
+        </select>
+        <label>Status:</label>
+        <div class="status-multi" id="statusMulti" style="position:relative;display:inline-block">
+            <button class="btn btn-ghost" id="statusMultiBtn" onclick="toggleStatusDropdown()" style="font-size:0.8rem;padding:0.3rem 0.6rem">Alle statusser ▾</button>
+            <div id="statusDropdown" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>
+        </div>
+        <button class="btn-ghost btn" onclick="toggleAllSections()">Fold sektioner ud/ind</button>
+        <button class="btn-ghost btn" id="toggleDatesBtn" onclick="toggleDates()">Vis datoer</button>
+        <button class="btn-ghost btn" id="toggleIdBtn" onclick="toggleId()">Vis ID</button>
+        <span style="border-left:1px solid var(--border);height:24px;margin:0 0.5rem"></span>
+        <label>Fra:</label>
+        <input type="date" id="rangeStart" value="2026-01-01" onchange="updateRange()">
+        <label>Til:</label>
+        <input type="date" id="rangeEnd" value="2026-12-31" onchange="updateRange()">
+        <button class="btn-ghost btn" onclick="resetRange()">Reset</button>
+        <span style="border-left:1px solid var(--border);height:24px;margin:0 0.5rem"></span>
+        <input type="text" id="searchInput" placeholder="🔍 Søg opgave..." oninput="render()">
+        <button class="btn" onclick="exportCSV()">📥 CSV</button>
+        <label class="btn btn-ghost" style="cursor:pointer">📂 Import Excel
+            <input type="file" id="excelImport" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
+        </label>
+        <button class="btn-ghost btn" id="toggleDepsBtn" onclick="toggleDeps()">Vis afhængigheder</button>
+        <button class="btn-ghost btn" onclick="toggleHelp()">❓ Hjælp</button>
+    </div>
+
+    <div class="help-panel" id="helpPanel">
+        <h2>📖 Brugervejledning – Projektplan Dashboard</h2>
+
+        <h3>1. Overblik</h3>
+        <p>Dashboardet giver et interaktivt overblik over ERP-implementeringsprojektet. Data importeres fra BC/TRIMIT via Excel og visualiseres i flere sektioner: fremdrift, KPI'er, opgavetræ, Gantt-tidslinje, ressourcebelastning og kapacitets-heatmap.</p>
+
+        <h3>2. Import af data</h3>
+        <p>Klik <strong>📂 Import Excel</strong> og vælg dit Activities.xlsx eksporteret fra BC/TRIMIT. Følgende kolonner genkendes automatisk:</p>
+        <ul>
+            <li><strong>Activity No.</strong> – Aktivitetsnummer (bruges til fase-hierarki og afhængigheder)</li>
+            <li><strong>Description</strong> – Opgavenavn</li>
+            <li><strong>Type</strong> – "Begin-Total" = faseoverskrift, "Posting" = opgave, "End-Total" = afslutning</li>
+            <li><strong>Resource No.</strong> – Ansvarlig person/team</li>
+            <li><strong>Resource Group No.</strong> – Ressourcegruppe (Konsulent, Udvikler osv.)</li>
+            <li><strong>Estimated Hours</strong> – Budgetterede timer</li>
+            <li><strong>Entered Hours</strong> – Forbrugte timer (registreret)</li>
+            <li><strong>Remaining Hours</strong> – Resterende timer</li>
+            <li><strong>Starting Date / Ending Date</strong> – Planlagt start og slut</li>
+            <li><strong>% Complete</strong> – Færdiggørelsesgrad</li>
+            <li><strong>Kolonne U</strong> – Afhængigheder (refererer til andre aktivitetsnumre)</li>
+        </ul>
+
+        <h3>3. KPI-oversigt (tallene forklaret)</h3>
+        <ul>
+            <li><strong>Estimerede timer</strong> – Samlet antal budgetterede timer på alle synlige opgaver</li>
+            <li><strong>Forbrugte timer</strong> – Timer der er registreret/brugt (fra "Entered Hours")</li>
+            <li><strong>Resterende timer</strong> – Timer der mangler (Estimat minus Forbrugt, eller fra "Remaining Hours")</li>
+            <li><strong>Samlet progression</strong> – Forbrugt / Estimat i procent for hele det synlige projekt</li>
+            <li><strong>Forfaldne opgaver</strong> – Opgaver hvor slutdato er overskredet men % < 100</li>
+        </ul>
+
+        <h3>4. Filtrering</h3>
+        <ul>
+            <li><strong>Resource</strong> – Vis kun opgaver for én bestemt person</li>
+            <li><strong>Fase</strong> – Zoom ind på én projektfase (Begin-Total)</li>
+            <li><strong>Status</strong> – Multi-valg: filtrer på Igangværende, Afsluttet, Ikke startet osv.</li>
+            <li><strong>Søg</strong> – Fritekstsøgning på opgavenavn eller resource</li>
+            <li><strong>Fra/Til</strong> – Juster Gantt-tidslinjen til et bestemt datointerval</li>
+        </ul>
+
+        <h3>5. Visninger og sektioner</h3>
+        <ul>
+            <li><strong>Projekt fremdrift</strong> – Stor progressbar med samlet % øverst</li>
+            <li><strong>Faser og opgaver</strong> – Hierarkisk trævisning med expand/collapse, timer, progress-bar</li>
+            <li><strong>Gantt-tidslinje</strong> – Visuel tidslinje med bjælker per fase/opgave. Grupperbar: Fase eller Overordnet fase</li>
+            <li><strong>Ressource-belastning</strong> – Bjælkediagram over timer per fase/ressource/gruppe. Viser % forbrug</li>
+            <li><strong>Kapacitets-heatmap</strong> – Tidsfordeling af timer over måneder/uger. Viser belastning per celle</li>
+        </ul>
+
+        <h3>6. Grupperinger</h3>
+        <p>Både Ressource-belastning og Kapacitets-heatmap kan grupperes på 4 måder:</p>
+        <ul>
+            <li><strong>Fase</strong> – Grupperet under hver projektfase (Begin-Total)</li>
+            <li><strong>Ressource</strong> – Flad liste sorteret efter timer</li>
+            <li><strong>Res.Group</strong> – Grupperet under ressourcegrupper (fx Konsulent, Udvikler)</li>
+            <li><strong>Overordnet fase</strong> – Grupperet under parent-fase (ID afrundet til nærmeste 1000)</li>
+        </ul>
+
+        <h3>7. Afhængigheder</h3>
+        <p>Opgaver kan referere til foregående opgavers aktivitetsnummer (kolonne U). Når "Vis afhængigheder" aktiveres:</p>
+        <ul>
+            <li>Et lilla <strong>🔗</strong>-badge vises på opgaven i træet med tooltip</li>
+            <li>SVG-pile tegnes i Gantt fra forudsætningens slutpunkt til den afhængige opgaves start</li>
+        </ul>
+
+        <h3>8. Eksport</h3>
+        <p>Klik <strong>📥 CSV</strong> for at downloade det aktuelle filtrerede view som semikolon-separeret fil (kan åbnes i Excel).</p>
+
+        <h3>9. Tips</h3>
+        <ul>
+            <li>Filen er selvstændig – del den direkte via mail/Teams uden installation</li>
+            <li>Kræver internetadgang (SheetJS CDN) ved første åbning</li>
+            <li>Pernilles humør gemmes lokalt i browseren (localStorage)</li>
+            <li>Alle sektioner kan foldes sammen ved klik på overskriften</li>
+        </ul>
+        <p class="author">Udarbejdet af Claus Nielsen · Maj 2026</p>
+    </div>
+
+    <div class="kpi-section" style="margin-bottom:1.5rem">
+        <div id="projectProgress" style="display:flex;align-items:center;gap:1rem;padding:0.5rem 0">
+            <span style="font-weight:700;font-size:1rem;white-space:nowrap">Projekt fremdrift</span>
+            <div style="flex:1;height:24px;background:var(--surface);border-radius:6px;position:relative;overflow:hidden">
+                <div id="projectProgressBar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width 0.4s"></div>
+                <span id="projectProgressPct" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white"></span>
+            </div>
+            <span id="projectProgressText" style="font-size:0.8rem;color:var(--muted);white-space:nowrap"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;padding:0.5rem 0;border-top:1px solid var(--border);margin-top:0.5rem">
+            <span style="font-weight:700;font-size:0.9rem;white-space:nowrap">Projektleder Pernilles humør</span>
+            <div style="display:flex;gap:0.75rem">
+                <button onclick="setMood('happy')" id="moodHappy" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Glad">😊</button>
+                <button onclick="setMood('neutral')" id="moodNeutral" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Neutral">😐</button>
+                <button onclick="setMood('sad')" id="moodSad" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Ked af det">😢</button>
+                <button onclick="setMood('angry')" id="moodAngry" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Sur">😡</button>
+            </div>
+            <span id="moodLabel" style="font-size:0.85rem;color:var(--muted)"></span>
+        </div>
+    </div>
+
+    <div class="kpi-section">
+        <h2 class="sec-toggle" onclick="toggleSec(this)">📈 KPI-oversigt</h2>
+        <div class="sec-body">
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="kpi-grid" id="kpiFinanceGrid"></div>
+        </div>
+    </div>
+
+    <div class="tree-section">
+        <h2 class="sec-toggle" onclick="toggleSec(this)">📋 Faser og opgaver
+            <span style="margin-left:auto;display:flex;gap:0.4rem" onclick="event.stopPropagation()">
+                <button class="btn btn-ghost" style="font-size:0.7rem;padding:0.2rem 0.5rem" onclick="toggleAllPhases()">Fold alle ud/ind</button>
+            </span>
+        </h2>
+        <div class="sec-body">
+        <div class="tree-header" id="treeHeader">
+            <span>Opgave</span>
+            <span>Timer</span>
+            <span>Forbrugt</span>
+            <span>Rest.</span>
+            <span>Resource</span>
+            <span>Progression</span>
+        </div>
+        <div id="treeBody"></div>
+        </div>
+    </div>
+
+    <div class="res-chart-section">
+        <h2 class="sec-toggle" onclick="toggleSec(this)">📊 Ressource-belastning</h2>
+        <div class="sec-body">
+        <div style="margin-bottom:0.5rem;display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-ghost" onclick="toggleResPhases()" style="font-size:0.75rem;padding:0.25rem 0.6rem">Fold alle ud/ind</button>
+            <span style="margin-left:0.5rem;font-size:0.7rem;color:var(--muted)">Gruppér:</span>
+            <button class="btn btn-ghost" id="resChartFaseBtn" onclick="setResChartGroup('fase')" style="border-radius:6px 0 0 6px;font-size:0.75rem;padding:0.25rem 0.6rem">Fase</button>
+            <button class="btn btn-ghost" id="resChartResBtn" onclick="setResChartGroup('res')" style="border-radius:0;font-size:0.75rem;padding:0.25rem 0.6rem">Ressource</button>
+            <button class="btn btn-ghost" id="resChartGroupBtn" onclick="setResChartGroup('group')" style="border-radius:0;font-size:0.75rem;padding:0.25rem 0.6rem">Res.Group</button>
+            <button class="btn btn-ghost" id="resChartParentBtn" onclick="setResChartGroup('parent')" style="border-radius:0 6px 6px 0;font-size:0.75rem;padding:0.25rem 0.6rem">Overordnet fase</button>
+        </div>
+        <div id="resChart"></div>
+        </div>
+    </div>
+
+    <div class="heatmap-section">
+        <h2 class="sec-toggle" onclick="toggleSec(this)" style="display:flex;align-items:center;gap:1rem">🗓️ Kapacitets-heatmap
+            <span style="display:flex;gap:0.4rem" onclick="event.stopPropagation()">
+                <button class="btn btn-ghost" style="font-size:0.7rem;padding:0.2rem 0.5rem" onclick="toggleHeatmapPhases()">Fold alle ud/ind</button>
+                <span style="display:flex;gap:0">
+                <button class="btn btn-ghost" id="heatmapGroupFaseBtn" onclick="setHeatmapGroup('fase')" style="border-radius:6px 0 0 6px;font-size:0.75rem;padding:0.25rem 0.6rem">Fase</button>
+                <button class="btn btn-ghost" id="heatmapGroupResBtn" onclick="setHeatmapGroup('res')" style="border-radius:0;font-size:0.75rem;padding:0.25rem 0.6rem">Ressource</button>
+                <button class="btn btn-ghost" id="heatmapGroupGroupBtn" onclick="setHeatmapGroup('group')" style="border-radius:0;font-size:0.75rem;padding:0.25rem 0.6rem">Res.Group</button>
+                <button class="btn btn-ghost" id="heatmapGroupParentBtn" onclick="setHeatmapGroup('parent')" style="border-radius:0 6px 6px 0;font-size:0.75rem;padding:0.25rem 0.6rem">Overordnet fase</button>
+                </span>
+                <span style="display:flex;gap:0">
+                <button class="btn btn-ghost" id="heatmapMonthBtn" onclick="setHeatmapMode('month')" style="border-radius:6px 0 0 6px;font-size:0.75rem;padding:0.25rem 0.6rem">Måned</button>
+                <button class="btn btn-ghost" id="heatmapWeekBtn" onclick="setHeatmapMode('week')" style="border-radius:0 6px 6px 0;font-size:0.75rem;padding:0.25rem 0.6rem">Uge</button>
+                </span>
+            </span>
+        </h2>
+        <div class="sec-body">
+        <table class="heatmap-table" id="heatmapTable"></table>
+        </div>
+    </div>
+
+    <div class="dep-gantt-section" id="depGanttSection">
+        <h2 class="sec-toggle" onclick="toggleSec(this)">🔗 Afhængigheds-Gantt – Overlap-analyse</h2>
+        <div class="sec-body">
+        <div id="depGanttSummary" class="dep-summary"></div>
+        <div id="depGanttChart" style="min-width:900px"></div>
+        </div>
+    </div>
+
+    <div class="gantt-section">
+        <h2 class="sec-toggle" onclick="toggleSec(this)">📊 Gantt – Tidslinje 2026
+            <span style="margin-left:auto;display:flex;gap:0.4rem" onclick="event.stopPropagation()">
+                <button class="btn btn-ghost" style="font-size:0.7rem;padding:0.2rem 0.5rem" onclick="toggleAllPhases()">Fold alle ud/ind</button>
+                <span style="display:flex;gap:0">
+                <button class="btn btn-ghost" id="ganttGroupFaseBtn" onclick="setGanttGroup('fase')" style="border-radius:6px 0 0 6px;font-size:0.75rem;padding:0.25rem 0.6rem">Fase</button>
+                <button class="btn btn-ghost" id="ganttGroupParentBtn" onclick="setGanttGroup('parent')" style="border-radius:0 6px 6px 0;font-size:0.75rem;padding:0.25rem 0.6rem">Overordnet fase</button>
+                </span>
+            </span>
+        </h2>
+        <div class="sec-body">
+        <div class="gantt" id="ganttChart"></div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Opstart</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Design</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div>Udvikling/Integration</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Finans/Salg/Køb/Lager</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div>Portal</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Test</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Go-Live</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div>Styring/Møder/Arkitekt</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red);width:2px;height:10px"></div>I dag</div>
+        </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Full data extracted from Activities.xlsx
+const rawData = [
+{id:'01000',name:'Opstart',type:'Begin-Total',res:'',hours:89.5,spent:45.5,rem:42.75,start:'2026-01-21',end:'2026-12-31',pct:52,children:[
+  {id:'01010',name:'Intern kickoff',res:'LBO',hours:10,spent:8.75,rem:0,start:'',end:'',pct:100},
+  {id:'01020',name:'Ekstern kickoff',res:'LBO',hours:10,spent:10,rem:0,start:'',end:'',pct:100},
+  {id:'01110',name:'Teknisk opsætning ForNav',res:'SBJ',hours:4,spent:0,rem:4,start:'2026-01-21',end:'2026-12-31',pct:0},
+  {id:'01120',name:'Første version kunde APP',res:'THE',hours:12.5,spent:12.5,rem:0,start:'2026-02-03',end:'2026-02-05',pct:100},
+  {id:'01130',name:'Teknisk opsætning',res:'SBJ',hours:25,spent:0,rem:25,start:'2026-01-21',end:'2026-12-31',pct:0},
+  {id:'01140',name:'Løft automatisk kode til backup',res:'ARM',hours:2,spent:2,rem:0,start:'2026-01-21',end:'2026-12-31',pct:100},
+  {id:'01150',name:'Opdatering BC ny major (2x)',res:'SBJ',hours:10,spent:0,rem:10,start:'2026-01-21',end:'2026-12-31',pct:0},
+  {id:'01160',name:'Opsætning JET Report',res:'SBJ',hours:1,spent:0,rem:1,start:'2026-01-21',end:'2026-12-31',pct:0},
+  {id:'01170',name:'Opsætning Logic Apps',res:'SBJ',hours:3,spent:0.75,rem:2.25,start:'2026-01-21',end:'2026-12-31',pct:25},
+  {id:'01205',name:'Portal forberedelse – dialog',res:'AMB',hours:2,spent:2,rem:0,start:'',end:'',pct:100},
+  {id:'01210',name:'Serverforberedelse',res:'SBJ',hours:2,spent:2,rem:0,start:'',end:'',pct:100},
+  {id:'01215',name:'Installation portaler',res:'SNI',hours:6,spent:5.5,rem:0.5,start:'',end:'',pct:92},
+  {id:'01220',name:'Opkobling portal til BC',res:'AMB',hours:2,spent:2,rem:0,start:'',end:'',pct:100}
+]},
+{id:'02000',name:'Design',type:'Begin-Total',res:'',hours:62,spent:27.75,rem:34.25,start:'2026-04-01',end:'2026-05-31',pct:45,children:[
+  {id:'02010',name:'FDD\'er færdiggøres (CLN)',res:'CLN',hours:25,spent:10.5,rem:14.5,start:'2026-04-01',end:'',pct:42},
+  {id:'02011',name:'FDD\'er færdiggøres (RVJ)',res:'RVJ',hours:10,spent:10,rem:0,start:'2026-04-01',end:'',pct:100},
+  {id:'02040',name:'Design 13 handelsdokumenter (CLN)',res:'CLN',hours:9,spent:4.25,rem:4.75,start:'2026-04-01',end:'',pct:47},
+  {id:'02041',name:'Design 13 handelsdokumenter (RVJ)',res:'RVJ',hours:4,spent:0.75,rem:3.25,start:'',end:'',pct:19},
+  {id:'02045',name:'Design 45 diverse rapporter',res:'CLN',hours:8,spent:2.25,rem:5.75,start:'2026-04-01',end:'',pct:28},
+  {id:'02900',name:'Præsentation af design',res:'#02',hours:3,spent:0,rem:3,start:'',end:'',pct:0},
+  {id:'02910',name:'Godkendelse design og estimater',res:'#02',hours:3,spent:0,rem:3,start:'',end:'',pct:0}
+]},
+{id:'03000',name:'Udvikling på tværs',type:'Begin-Total',res:'',hours:152,spent:23.75,rem:128.25,start:'2026-04-01',end:'2026-11-30',pct:16,children:[
+  {id:'03010',name:'Udvikling 13 handelsdokumenter',res:'TRA',hours:1,spent:1,rem:0,start:'',end:'',pct:100},
+  {id:'03020',name:'Udvikling 45 diverse rapporter',res:'TRA',hours:21,spent:1.25,rem:19.75,start:'',end:'',pct:6},
+  {id:'03032',name:'Salgsordrebekræftelse - Konsulent',res:'CLN',hours:2,spent:2,rem:0,start:'',end:'2026-06-01',pct:100},
+  {id:'03033',name:'Salgsordrebekræftelse - Udvikler',res:'TRA',hours:13,spent:13,rem:0,start:'',end:'2026-06-01',pct:100},
+  {id:'03036',name:'Salgsordrefaktura DK - Konsulent',res:'CLN',hours:3.5,spent:3.5,rem:0,start:'',end:'2026-11-01',pct:100},
+  {id:'03037',name:'Salgsordrefaktura DK - Udvikler',res:'TRA',hours:3.5,spent:0,rem:3.5,start:'',end:'2026-11-01',pct:0},
+  {id:'03040',name:'Salgsordrefaktura NO - Konsulent',res:'CLN',hours:3.5,spent:3,rem:0.5,start:'',end:'2026-11-01',pct:86},
+  {id:'03041',name:'Salgsordrefaktura NO - Udvikler',res:'TRA',hours:3.5,spent:0,rem:3.5,start:'',end:'2026-11-01',pct:0},
+  {id:'03044',name:'Salgsordrefaktura EN - Konsulent',res:'CLN',hours:3,spent:0,rem:3,start:'',end:'2026-11-01',pct:0},
+  {id:'03045',name:'Salgsordrefaktura EN - Udvikler',res:'TRA',hours:3,spent:0,rem:3,start:'',end:'2026-11-01',pct:0},
+  {id:'03048',name:'Salgskreditnota - Konsulent',res:'CLN',hours:2,spent:0,rem:2,start:'',end:'2026-11-01',pct:0},
+  {id:'03049',name:'Salgskreditnota - Udvikler',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'2026-11-01',pct:0},
+  {id:'03052',name:'Kontoudtog - Konsulent',res:'RVJ',hours:2,spent:0,rem:2,start:'',end:'2026-11-01',pct:0},
+  {id:'03053',name:'Kontoudtog - Udvikler',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'2026-11-01',pct:0},
+  {id:'03056',name:'Rykker - Konsulent',res:'CLN',hours:2,spent:0,rem:2,start:'',end:'2026-11-01',pct:0},
+  {id:'03057',name:'Rykker - Udvikler',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'2026-11-01',pct:0},
+  {id:'03064',name:'Købsordre - Konsulent',res:'CLN',hours:2,spent:0,rem:2,start:'',end:'2026-07-01',pct:0},
+  {id:'03065',name:'Købsordre - Udvikler',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'2026-07-01',pct:0},
+  {id:'03068',name:'Proformafaktura - Konsulent',res:'CLN',hours:2,spent:0,rem:2,start:'',end:'',pct:0},
+  {id:'03069',name:'Proformafaktura - Udvikler',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'',pct:0},
+  {id:'03072',name:'Ordrebekr. m. restordre - Kons.',res:'CLN',hours:2,spent:0,rem:2,start:'',end:'',pct:0},
+  {id:'03073',name:'Ordrebekr. m. restordre - Udv.',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'',pct:0},
+  {id:'03076',name:'Rentenota - Konsulent',res:'RVJ',hours:2,spent:0,rem:2,start:'',end:'',pct:0},
+  {id:'03077',name:'Rentenota - Udvikler',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'',pct:0},
+  {id:'03080',name:'Returordrebekr. - Konsulent',res:'#02',hours:2,spent:0,rem:2,start:'',end:'2026-11-01',pct:0},
+  {id:'03081',name:'Returordrebekr. - Udvikler',res:'TRA',hours:7,spent:0,rem:7,start:'',end:'2026-11-01',pct:0},
+  {id:'03952',name:'Tilbageløb efter test',res:'#03',hours:14,spent:0,rem:14,start:'',end:'',pct:0}
+]},
+{id:'10500',name:'Integration og rapporter',type:'Begin-Total',res:'',hours:45,spent:0,rem:45,start:'2026-09-01',end:'2026-10-31',pct:0,children:[
+  {id:'10505',name:'EDI001 Kollektionsfiltrering - Udv.',res:'RNE',hours:8,spent:0,rem:8,start:'2026-09-01',end:'',pct:0},
+  {id:'10506',name:'EDI001 Kollektionsfiltrering - Kons.',res:'RVJ',hours:3,spent:0,rem:3,start:'2026-09-01',end:'',pct:0},
+  {id:'10510',name:'EDI002 tilpasninger EDI - Udv.',res:'RNE',hours:25,spent:0,rem:25,start:'2026-09-01',end:'',pct:0},
+  {id:'10511',name:'EDI002 tilpasninger EDI - Kons.',res:'RVJ',hours:5,spent:0,rem:5,start:'2026-09-01',end:'',pct:0},
+  {id:'10900',name:'Tilbageløb efter test',res:'#03',hours:4,spent:0,rem:4,start:'2026-09-01',end:'',pct:0}
+]},
+{id:'11000',name:'Finans',type:'Begin-Total',res:'',hours:225,spent:41.25,rem:182.25,start:'2026-02-01',end:'2026-10-31',pct:18,children:[
+  {id:'11020',name:'ØKO001 Ordertypebudget - Udv.',res:'RNE',hours:2,spent:2,rem:0,start:'',end:'',pct:100},
+  {id:'11021',name:'ØKO001 Ordertypebudget - Kons.',res:'RVJ',hours:1.5,spent:1.5,rem:0,start:'',end:'',pct:100},
+  {id:'11030',name:'ØKO002 Atradius Flow - Udv.',res:'RNE',hours:30,spent:1,rem:29,start:'2026-08-15',end:'',pct:3},
+  {id:'11031',name:'ØKO002 Atradius Flow - Kons.',res:'RVJ',hours:4,spent:0,rem:4,start:'2026-08-15',end:'',pct:0},
+  {id:'11040',name:'ØKO003 Dim. finansposter - Udv.',res:'RNE',hours:1,spent:1,rem:0,start:'',end:'',pct:100},
+  {id:'11041',name:'ØKO003 Dim. finansposter - Kons.',res:'RVJ',hours:1,spent:1,rem:0,start:'',end:'',pct:100},
+  {id:'11050',name:'ØKO004 Kladde vareforbrug - Udv.',res:'RNE',hours:2.5,spent:1,rem:0,start:'',end:'',pct:100},
+  {id:'11051',name:'ØKO004 Kladde vareforbrug - Kons.',res:'RVJ',hours:2,spent:2,rem:0,start:'',end:'',pct:100},
+  {id:'11055',name:'ØKO005 Samlefakturering - Udv.',res:'RNE',hours:4,spent:3.75,rem:0.25,start:'2026-06-01',end:'',pct:94},
+  {id:'11056',name:'ØKO005 Samlefakturering - Kons.',res:'RVJ',hours:2,spent:1,rem:1,start:'2026-06-01',end:'',pct:50},
+  {id:'11060',name:'ØKO006 Tolderklæring - Udv.',res:'RNE',hours:1,spent:0,rem:1,start:'2026-06-01',end:'',pct:0},
+  {id:'11061',name:'ØKO006 Tolderklæring - Kons.',res:'RVJ',hours:5,spent:0,rem:5,start:'2026-06-01',end:'',pct:0},
+  {id:'11062',name:'ØKO007 SEPA - Udv.',res:'RNE',hours:20,spent:0,rem:20,start:'2026-08-15',end:'',pct:0},
+  {id:'11063',name:'ØKO007 SEPA - Kons.',res:'RVJ',hours:5,spent:0,rem:5,start:'2026-08-15',end:'',pct:0},
+  {id:'11065',name:'ØKO009 Kreditmax - Udv.',res:'RNE',hours:7,spent:0,rem:7,start:'2026-06-01',end:'',pct:0},
+  {id:'11066',name:'ØKO009 Kreditmax - Kons.',res:'RVJ',hours:3,spent:0.5,rem:2.5,start:'2026-06-01',end:'',pct:17},
+  {id:'11070',name:'ØKO010 Pleo - Udv.',res:'RNE',hours:10,spent:0,rem:10,start:'2026-09-01',end:'',pct:0},
+  {id:'11071',name:'ØKO010 Pleo - Kons.',res:'RVJ',hours:5,spent:1,rem:4,start:'2026-09-01',end:'',pct:20},
+  {id:'11080',name:'ØKO011 Faktura m. Rykker - Udv.',res:'RNE',hours:3,spent:0,rem:3,start:'2026-09-01',end:'',pct:0},
+  {id:'11081',name:'ØKO011 Faktura m. Rykker - Kons.',res:'RVJ',hours:1,spent:0,rem:1,start:'2026-09-01',end:'',pct:0},
+  {id:'11090',name:'ØKO012 Åbne poster kontoudtog - Udv.',res:'RNE',hours:3,spent:3,rem:0,start:'2026-09-01',end:'',pct:100},
+  {id:'11091',name:'ØKO012 Åbne poster kontoudtog - Kons.',res:'RVJ',hours:3,spent:0,rem:3,start:'2026-09-01',end:'',pct:0},
+  {id:'11200',name:'Tilbageløb efter test',res:'#03',hours:12,spent:0,rem:12,start:'',end:'',pct:0},
+  {id:'11305',name:'Regnskab og oprettelse',res:'CLN',hours:4,spent:4,rem:0,start:'2026-02-02',end:'2026-02-06',pct:100},
+  {id:'11310',name:'Kontoplan',res:'RVJ',hours:4,spent:4,rem:0,start:'',end:'',pct:100},
+  {id:'11311',name:'Nye kontoskemaer',res:'RVJ',hours:2,spent:0,rem:2,start:'2026-10-01',end:'',pct:0},
+  {id:'11320',name:'Dimensioner',res:'RVJ',hours:4,spent:4,rem:0,start:'',end:'',pct:100},
+  {id:'11330',name:'Bogføringsopsæt',res:'RVJ',hours:3,spent:3,rem:0,start:'2026-02-02',end:'2026-02-06',pct:100},
+  {id:'11340',name:'Momsbogføringsopsæt',res:'RVJ',hours:8,spent:6.5,rem:1.5,start:'2026-05-01',end:'',pct:81}
+]},
+{id:'12000',name:'PDM',type:'Begin-Total',res:'',hours:28.25,spent:22.25,rem:1,start:'2026-02-01',end:'2026-04-30',pct:96,children:[
+  {id:'12010',name:'PDM001 Standard funktionalitet',res:'CLN',hours:4,spent:4,rem:0,start:'',end:'',pct:100},
+  {id:'12020',name:'PDM002 Tilpasning',res:'CLN',hours:8,spent:8,rem:0,start:'',end:'',pct:100},
+  {id:'12030',name:'PDM003 Dataflytning',res:'CLN',hours:8,spent:8,rem:0,start:'',end:'',pct:100},
+  {id:'12040',name:'PDM003 Dataflytning - Udv.',res:'ARM',hours:2.25,spent:2.25,rem:0,start:'',end:'',pct:100},
+  {id:'12050',name:'PDM impl. - Konsulent',res:'CLN',hours:6,spent:0,rem:1,start:'',end:'',pct:83}
+]},
+{id:'13000',name:'Salg',type:'Begin-Total',res:'',hours:107,spent:29,rem:54,start:'2026-03-09',end:'2026-11-30',pct:32,children:[
+  {id:'13020',name:'SALG001 Ordretyper - Udv.',res:'IRR',hours:5,spent:5,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13021',name:'SALG001 Ordretyper - Kons.',res:'CLN',hours:3,spent:3,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13050',name:'SALG003 Forsendelsesliste - Udv.',res:'IRR',hours:5,spent:5,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13051',name:'SALG003 Forsendelsesliste - Kons.',res:'CLN',hours:3,spent:3,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13100',name:'SALG004 Tilpasning - Udv.',res:'IRR',hours:5,spent:0,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13101',name:'SALG004 Tilpasning - Kons.',res:'CLN',hours:3,spent:0,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13190',name:'KONSIGNATION001 - Udv.',res:'IRR',hours:10,spent:0,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13191',name:'KONSIGNATION001 - Kons.',res:'CLN',hours:6,spent:0,rem:0,start:'2026-04-01',end:'',pct:100},
+  {id:'13195',name:'KONSIGNATION002 - Udv.',res:'IRR',hours:5,spent:0,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'13196',name:'KONSIGNATION002 - Kons.',res:'CLN',hours:3,spent:0,rem:0,start:'2026-04-01',end:'',pct:100},
+  {id:'13250',name:'Tilbageløb efter test',res:'#03',hours:7,spent:0,rem:5,start:'2026-03-09',end:'',pct:0},
+  {id:'13310',name:'Implementering af salg',res:'CLN',hours:11,spent:9,rem:2,start:'2026-03-09',end:'',pct:82},
+  {id:'13320',name:'Reklamation',res:'CLN',hours:8,spent:0,rem:8,start:'2026-11-01',end:'',pct:0},
+  {id:'13330',name:'Konsignation',res:'CLN',hours:6,spent:0,rem:6,start:'2026-04-01',end:'2026-05-01',pct:0},
+  {id:'13340',name:'Varesalgs erstatning',res:'CLN',hours:4,spent:0,rem:4,start:'2026-08-15',end:'',pct:0}
+]},
+{id:'14000',name:'Køb',type:'Begin-Total',res:'',hours:51,spent:6.75,rem:44.25,start:'2026-04-07',end:'2026-08-31',pct:13,children:[
+  {id:'14020',name:'KØB002 Felter på købslinjer - Udv.',res:'TRA',hours:1,spent:0,rem:1,start:'2026-05-01',end:'',pct:0},
+  {id:'14021',name:'KØB002 Felter på købslinjer - Kons.',res:'CLN',hours:1,spent:0,rem:1,start:'2026-05-01',end:'',pct:0},
+  {id:'14031',name:'KØB003 Datoer på købslinjer - Kons.',res:'CLN',hours:6,spent:0,rem:6,start:'2026-05-01',end:'',pct:0},
+  {id:'14061',name:'KØB006 Forsendelsesliste - Udv.',res:'BDM',hours:10,spent:0,rem:10,start:'2026-05-01',end:'',pct:0},
+  {id:'14062',name:'KØB006 Forsendelsesliste - Kons.',res:'CLN',hours:11,spent:0,rem:11,start:'2026-05-01',end:'',pct:0},
+  {id:'14070',name:'KØB007 Update Purch Price - Udv.',res:'TRA',hours:1,spent:0,rem:1,start:'2026-05-01',end:'',pct:0},
+  {id:'14071',name:'KØB007 Update Purch Price - Kons.',res:'CLN',hours:1,spent:0,rem:1,start:'2026-05-01',end:'',pct:0},
+  {id:'14150',name:'Tilbageløb efter test',res:'#03',hours:3,spent:0,rem:3,start:'2026-05-01',end:'',pct:0},
+  {id:'14310',name:'Implementering af køb',res:'CLN',hours:10,spent:6.75,rem:3.25,start:'2026-05-01',end:'',pct:68},
+  {id:'14320',name:'Opsætning WF for køb',res:'CLN',hours:7,spent:0,rem:7,start:'2026-05-01',end:'',pct:0}
+]},
+{id:'15000',name:'Lager',type:'Begin-Total',res:'',hours:117,spent:0,rem:117,start:'2026-08-10',end:'2026-10-31',pct:0,children:[
+  {id:'15020',name:'LAGER001 Fragtberegning - Udv.',res:'IRR',hours:2,spent:0,rem:2,start:'2026-08-10',end:'',pct:0},
+  {id:'15021',name:'LAGER001 Fragtberegning - Kons.',res:'CLN',hours:1,spent:0,rem:1,start:'2026-08-10',end:'',pct:0},
+  {id:'15030',name:'LAGER002 Kolonne plukliste - Udv.',res:'IRR',hours:2,spent:0,rem:2,start:'2026-08-10',end:'',pct:0},
+  {id:'15031',name:'LAGER002 Kolonne plukliste - Kons.',res:'CLN',hours:1,spent:0,rem:1,start:'2026-08-10',end:'',pct:0},
+  {id:'15040',name:'LAGER003 Systemtransport - Udv.',res:'IRR',hours:60,spent:0,rem:60,start:'2026-08-10',end:'',pct:0},
+  {id:'15041',name:'LAGER003 Systemtransport - Kons.',res:'CLN',hours:10,spent:0,rem:10,start:'2026-08-10',end:'',pct:0},
+  {id:'15150',name:'Tilbageløb efter test',res:'#03',hours:8,spent:0,rem:8,start:'2026-08-10',end:'',pct:0},
+  {id:'15310',name:'Gennemgang lagerprocesser',res:'CLN',hours:8,spent:0,rem:8,start:'2026-08-10',end:'',pct:0},
+  {id:'15505',name:'Opgavekøposter',res:'CLN',hours:25,spent:0,rem:25,start:'2026-08-10',end:'',pct:0}
+]},
+{id:'16000',name:'Portal',type:'Begin-Total',res:'',hours:179.25,spent:20,rem:95.25,start:'2026-03-09',end:'2026-10-31',pct:17,children:[
+  {id:'16015',name:'PORTAL001 Logo efter Brand - Web',res:'SNI',hours:2,spent:0,rem:0,start:'2026-06-30',end:'',pct:100},
+  {id:'16016',name:'PORTAL001 Logo efter Brand - Kons.',res:'AMB',hours:1,spent:0,rem:0,start:'2026-06-30',end:'',pct:100},
+  {id:'16020',name:'SA PORTAL002 Kurvbeløb - Web',res:'SNI',hours:2,spent:0,rem:0,start:'2026-03-09',end:'2026-04-17',pct:100},
+  {id:'16021',name:'SA PORTAL002 Kurvbeløb - Kons.',res:'AMB',hours:2.25,spent:0.25,rem:0,start:'2026-03-09',end:'2026-04-17',pct:100},
+  {id:'16030',name:'PORTAL004 Re-order - BC-udv.',res:'LRM',hours:10,spent:0,rem:0,start:'2026-06-30',end:'',pct:100},
+  {id:'16031',name:'PORTAL004 Re-order - Kons.',res:'AMB',hours:4,spent:0,rem:0,start:'2026-06-30',end:'',pct:100},
+  {id:'16040',name:'PORTAL006 EAN-filer - BC-udv.',res:'LRM',hours:4,spent:0,rem:0,start:'2026-06-30',end:'',pct:100},
+  {id:'16041',name:'PORTAL006 EAN-filer - Web',res:'SNI',hours:3,spent:0,rem:0,start:'2026-06-30',end:'',pct:100},
+  {id:'16042',name:'PORTAL006 EAN-filer - Kons.',res:'AMB',hours:2,spent:0,rem:0,start:'2026-06-30',end:'',pct:100},
+  {id:'16060',name:'SA PORTAL010 Billedhåndtering - Kons.',res:'AMB',hours:18,spent:0,rem:18,start:'2026-03-09',end:'2026-04-17',pct:0},
+  {id:'16061',name:'SA PORTAL010 Billedhåndtering - Web',res:'SNI',hours:30,spent:0,rem:30,start:'2026-03-09',end:'2026-04-17',pct:0},
+  {id:'16150',name:'Tilbageløb efter test',res:'#04',hours:14,spent:0,rem:5,start:'2026-03-09',end:'',pct:0},
+  {id:'16510',name:'Afklaring portalprofiler',res:'AMB',hours:1,spent:0,rem:1,start:'2026-08-10',end:'',pct:0},
+  {id:'16520',name:'Opsætning B2B i BC',res:'AMB',hours:6,spent:2.5,rem:3.5,start:'2026-08-10',end:'',pct:42},
+  {id:'16530',name:'Opsætning B2B i portal',res:'AMB',hours:6,spent:2.5,rem:3.5,start:'2026-08-10',end:'',pct:42},
+  {id:'16540',name:'B2B justeringer layout',res:'#04',hours:5,spent:0,rem:5,start:'2026-08-10',end:'',pct:0},
+  {id:'16810',name:'SA afklaring med kunde',res:'AMB',hours:1,spent:0.25,rem:0.75,start:'2026-03-09',end:'',pct:25},
+  {id:'16820',name:'SA opsætning i BC',res:'AMB',hours:6,spent:6,rem:0,start:'2026-03-09',end:'',pct:100},
+  {id:'16830',name:'SA opsætning i portal',res:'AMB',hours:6,spent:2.5,rem:3.5,start:'2026-03-09',end:'',pct:42},
+  {id:'16840',name:'SA justeringer layout',res:'#04',hours:5,spent:0,rem:5,start:'2026-03-09',end:'',pct:0},
+  {id:'16910',name:'Oplæring PIR',res:'AMB',hours:4,spent:0,rem:4,start:'2026-03-09',end:'',pct:0},
+  {id:'16920',name:'Oplæring Collage',res:'AMB',hours:5,spent:2.5,rem:3.5,start:'2026-03-09',end:'',pct:30},
+  {id:'16930',name:'Oplæring brugere',res:'AMB',hours:5,spent:1,rem:4,start:'2026-03-09',end:'',pct:20},
+  {id:'16940',name:'Oplæring filter tags',res:'AMB',hours:7,spent:1,rem:6,start:'2026-03-09',end:'',pct:14},
+  {id:'16950',name:'Oplæring kampagner',res:'AMB',hours:4,spent:1.5,rem:2.5,start:'2026-03-09',end:'',pct:38}
+]},
+{id:'17000',name:'Add-Ons',type:'Begin-Total',res:'',hours:172,spent:16.75,rem:155.25,start:'2026-03-09',end:'2026-11-30',pct:10,children:[
+  {id:'17015',name:'Rettigheder',res:'GLA',hours:14,spent:1.5,rem:12.5,start:'2026-03-09',end:'',pct:11},
+  {id:'17020',name:'Continia Banking',res:'RVJ',hours:28,spent:0,rem:28,start:'2026-08-01',end:'',pct:0},
+  {id:'17030',name:'Continia DC',res:'HLM',hours:12,spent:0,rem:12,start:'2026-09-01',end:'',pct:0},
+  {id:'17050',name:'Pluk / Spær',res:'CLN',hours:6,spent:0,rem:6,start:'2026-08-01',end:'',pct:0},
+  {id:'17060',name:'EAN',res:'CLN',hours:14,spent:3,rem:11,start:'2026-03-09',end:'',pct:21},
+  {id:'17090',name:'Opsætning e-mail',res:'CLN',hours:6,spent:0,rem:6,start:'2026-05-01',end:'',pct:0},
+  {id:'17100',name:'Fragt modul',res:'CLN',hours:6,spent:0,rem:6,start:'2026-09-01',end:'',pct:0},
+  {id:'17110',name:'Rollecenter',res:'CLN',hours:6,spent:0,rem:6,start:'2026-08-01',end:'',pct:0},
+  {id:'17120',name:'Atradius',res:'RVJ',hours:10,spent:0,rem:10,start:'2026-09-01',end:'',pct:0},
+  {id:'17140',name:'Løft Debitor/Kreditor',res:'CLN',hours:25,spent:12.25,rem:12.75,start:'2026-03-09',end:'',pct:49},
+  {id:'17150',name:'Told',res:'RVJ',hours:5,spent:0,rem:5,start:'2026-08-01',end:'',pct:0},
+  {id:'17160',name:'Certificeringsmodul',res:'#02',hours:14,spent:0,rem:14,start:'2026-03-09',end:'',pct:0},
+  {id:'17170',name:'Pleo',res:'RVJ',hours:10,spent:0,rem:10,start:'2026-09-01',end:'',pct:0},
+  {id:'17190',name:'ForNav opsætning',res:'CLN',hours:5,spent:0,rem:5,start:'2026-03-09',end:'',pct:0},
+  {id:'17200',name:'Sepa',res:'RVJ',hours:7,spent:0,rem:7,start:'2026-06-01',end:'',pct:0},
+  {id:'17220',name:'Logic Apps',res:'#02',hours:4,spent:0,rem:4,start:'2026-03-09',end:'',pct:0}
+]},
+{id:'18000',name:'Punkt test',type:'Begin-Total',res:'',hours:25,spent:0,rem:25,start:'2026-03-16',end:'2026-10-15',pct:0,children:[
+  {id:'18050',name:'Støtte til testdokumentation',res:'#02',hours:25,spent:0,rem:25,start:'2026-03-16',end:'',pct:0}
+]},
+{id:'19000',name:'Flow test',type:'Begin-Total',res:'',hours:0,spent:0,rem:0,start:'2026-04-07',end:'2026-11-15',pct:0,children:[
+  {id:'19010',name:'Flow test Finans',res:'RVJ',hours:0,spent:0,rem:0,start:'2026-04-07',end:'',pct:0},
+  {id:'19015',name:'Flow test PDM',res:'CLN',hours:0,spent:0,rem:0,start:'2026-04-07',end:'',pct:0},
+  {id:'19020',name:'Flow test Salg',res:'CLN',hours:0,spent:0,rem:0,start:'2026-05-01',end:'',pct:0},
+  {id:'19030',name:'Flow test Køb',res:'CLN',hours:0,spent:0,rem:0,start:'2026-06-01',end:'',pct:0},
+  {id:'19035',name:'Flow test Lager',res:'CLN',hours:0,spent:0,rem:0,start:'2026-10-01',end:'',pct:0},
+  {id:'19040',name:'Flow test Udvikling',res:'#03',hours:0,spent:0,rem:0,start:'2026-04-07',end:'',pct:0}
+]},
+{id:'20000',name:'Go-Live',type:'Begin-Total',res:'',hours:24,spent:1,rem:23,start:'2026-04-27',end:'2026-12-31',pct:4,children:[
+  {id:'20010',name:'Åbningsposter',res:'RVJ',hours:20,spent:1,rem:19,start:'2026-04-27',end:'',pct:5},
+  {id:'20110',name:'Installation portaler - Sandbox',res:'#04',hours:2,spent:0,rem:2,start:'2026-04-27',end:'',pct:0},
+  {id:'20120',name:'Domæner - Prod og sandbox',res:'#04',hours:2,spent:0,rem:2,start:'2026-04-27',end:'',pct:0}
+]},
+{id:'21000',name:'Arkitekt',type:'Begin-Total',res:'',hours:100,spent:19.5,rem:80.5,start:'2026-01-21',end:'2026-12-31',pct:20,children:[
+  {id:'21010',name:'Arkitekt sparring',res:'HSJ',hours:100,spent:19.5,rem:80.5,start:'2026-01-21',end:'',pct:20}
+]},
+{id:'21500',name:'Møder',type:'Begin-Total',res:'',hours:60,spent:16,rem:45.5,start:'2026-01-21',end:'2026-12-31',pct:24,children:[
+  {id:'21510',name:'Møder',res:'#02',hours:60,spent:16,rem:45.5,start:'',end:'',pct:24}
+]},
+{id:'25000',name:'Styring',type:'Begin-Total',res:'',hours:283,spent:82,rem:190.28,start:'2026-01-21',end:'2026-12-31',pct:30,children:[
+  {id:'25010',name:'Projektledelse',res:'LBO',hours:263,spent:82,rem:170.28,start:'2026-01-21',end:'2026-12-31',pct:32},
+  {id:'25998',name:'Buffer',res:'#02',hours:20,spent:0,rem:20,start:'',end:'',pct:0}
+]},
+{id:'30000',name:'Nye opgaver',type:'Begin-Total',res:'',hours:0,spent:16.25,rem:4.75,start:'2026-03-09',end:'2026-06-30',pct:77,children:[
+  {id:'30001',name:'PORTAL013 Produktinfo farve - Kons.',res:'AMB',hours:0,spent:2.75,rem:0.25,start:'',end:'',pct:92},
+  {id:'30002',name:'PORTAL013 Produktinfo farve - Web',res:'SNI',hours:0,spent:9.75,rem:0.25,start:'',end:'',pct:98},
+  {id:'30003',name:'PORTAL013 Produktinfo farve - BC',res:'LRM',hours:0,spent:3.75,rem:1.25,start:'',end:'',pct:75},
+  {id:'30004',name:'PORTAL013 Produktinfo farve - Test',res:'AMB',hours:0,spent:0,rem:3,start:'',end:'',pct:0}
+]}
+];
+
+// Color mapping for phases
+const phaseColors = {
+    '01000': 'var(--blue)',
+    '02000': 'var(--purple)',
+    '03000': 'var(--cyan)',
+    '10500': 'var(--cyan)',
+    '11000': 'var(--amber)',
+    '12000': 'var(--green)',
+    '13000': 'var(--amber)',
+    '14000': 'var(--amber)',
+    '15000': 'var(--amber)',
+    '16000': 'var(--pink)',
+    '17000': 'var(--cyan)',
+    '18000': 'var(--green)',
+    '19000': 'var(--green)',
+    '20000': 'var(--orange)',
+    '21000': 'var(--muted)',
+    '21500': 'var(--muted)',
+    '25000': 'var(--muted)',
+    '30000': 'var(--purple)'
+};
+
+// Timeline config
+const fullTimelineStart = new Date('2026-01-01');
+const fullTimelineEnd = new Date('2026-12-31');
+let timelineStart = new Date('2026-01-01');
+let timelineEnd = new Date('2026-12-31');
+let totalDays = (timelineEnd - timelineStart) / 86400000;
+const today = new Date('2026-05-06');
+
+function updateRange() {
+    const s = document.getElementById('rangeStart').value;
+    const e = document.getElementById('rangeEnd').value;
+    if (s) timelineStart = new Date(s);
+    if (e) timelineEnd = new Date(e);
+    totalDays = (timelineEnd - timelineStart) / 86400000;
+    render();
+}
+function resetRange() {
+    timelineStart = new Date('2026-01-01');
+    timelineEnd = new Date('2026-12-31');
+    totalDays = (timelineEnd - timelineStart) / 86400000;
+    document.getElementById('rangeStart').value = '2026-01-01';
+    document.getElementById('rangeEnd').value = '2026-12-31';
+    render();
+}
+function getTodayPct() { return dateToPct(today); }
+
+// Excel import
+function importExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+        const parsed = parseExcelRows(rows);
+        if (parsed.length === 0) { alert('Ingen data fundet. Tjek Excel-format.'); return; }
+        rawData.length = 0;
+        parsed.forEach(p => rawData.push(p));
+        document.getElementById('dataSourceInfo').textContent = '📂 ' + file.name;
+        rebuildAfterImport();
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+}
+
+function parseExcelRows(rows) {
+    // Detect column names (supports multiple naming conventions)
+    const colMap = detectColumns(rows[0]);
+    if (!colMap) { alert('Kan ikke genkende kolonner.'); return []; }
+
+
+    const phases = [];
+    let currentPhase = null;
+
+    rows.forEach(row => {
+        const id = String(row[colMap.id] || '').trim();
+        const name = String(row[colMap.name] || '').trim();
+        const type = String(row[colMap.type] || '').trim();
+        const res = String(row[colMap.res] || '').trim();
+        const resGrp = colMap.resGrp ? String(row[colMap.resGrp] || '').trim() : '';
+        const hours = parseNum(row[colMap.hours]);
+        const spent = parseNum(row[colMap.spent]);
+        const rem = parseNum(row[colMap.rem]);
+        const start = parseExcelDate(row[colMap.start]);
+        const end = parseExcelDate(row[colMap.end]);
+        let pct = parseNum(row[colMap.pct]);
+        if (pct > 100) pct = pct / 100;
+        const status = colMap.status ? String(row[colMap.status] || '').trim() : '';
+        const deps = colMap.deps ? String(row[colMap.deps] || '').trim() : '';
+
+        if (!id && !name) return; // skip empty rows
+
+        // Skip all summary/total rows (Total, End-Total, End)
+        if (type === 'Total' || type.includes('End-Total') || type.includes('End')) {
+            return;
+        }
+        if (type.includes('Begin-Total') || type.includes('Begin')) {
+            // Phase header
+            currentPhase = {id, name, type:'Begin-Total', res, hours, spent, rem, start, end, pct: Math.round(pct), children:[]};
+            phases.push(currentPhase);
+        } else {
+            // Posting or other task row - add as child
+            if (currentPhase) {
+                currentPhase.children.push({id, name, res, resGrp, hours, spent, rem, start, end, pct: Math.round(pct), status, deps});
+            } else {
+                // Orphan task - create auto phase
+                currentPhase = {id, name, type:'Begin-Total', res, hours, spent, rem, start, end, pct: Math.round(pct), children:[]};
+                phases.push(currentPhase);
+            }
+        }
+    });
+    return phases;
+}
+
+function detectColumns(firstRow) {
+    if (!firstRow) return null;
+    const keys = Object.keys(firstRow);
+    console.log('Excel columns detected:', keys);
+    console.log('ALL COLUMN NAMES:', JSON.stringify(keys));
+    const find = (patterns) => keys.find(k => patterns.some(p => k.toLowerCase().includes(p)));
+    const findExclude = (patterns, exclude) => keys.find(k => patterns.some(p => k.toLowerCase().includes(p)) && !exclude.some(e => k.toLowerCase().includes(e)));
+    const id = find(['activity no', 'aktivitetsnr', 'aktivitet nr', 'no.', 'id', 'nummer']);
+    const name = find(['description', 'beskrivelse', 'name', 'opgave']);
+    const type = find(['type', 'activity type']);
+    const resGrp = find(['resource group', 'res. group', 'resource group no', 'res.group', 'ressourcegruppe']);
+    const res = findExclude(['resource no', 'resource', 'ressource', 'res.', 'res no', 'medarbejder'], ['group']);
+    const hours = findExclude(['estimated', 'estimat', 'budget hours', 'hours'], ['spent', 'remaining', 'rest', 'entered', 'billable', 'capacity']);
+    const spent = find(['entered hours', 'entered', 'spent', 'forbrugt', 'actual', 'hours spent', 'forbrug', 'used', 'invoiced', 'faktureret']);
+    const rem = findExclude(['remaining hours', 'remaining', 'rest', 'rem', 'rest timer'], ['budget', 'deliveries', 'capacity']);
+    const start = find(['starting', 'start', 'fra']);
+    const end = find(['ending', 'end', 'slut', 'til']);
+    const pct = find(['%', 'pct', 'complete', 'progress', 'procent', 'f\u00e6rdig']);
+    const status = find(['status', 'state', 'tilstand']) || (keys.length >= 9 ? keys[8] : '');
+    const deps = find(['depend', 'afh\u00e6ng', 'predecessor', 'foruds', 'col u', 'kolonne u']) || (keys.length >= 21 ? keys[20] : '');
+    if (!name) return null;
+    const colMap = {id: id||name, name, type: type||'', res: res||'', resGrp: resGrp||'', hours: hours||'', spent: spent||'', rem: rem||'', start: start||'', end: end||'', pct: pct||'', status: status||'', deps: deps};
+    console.log('Column mapping:', colMap);
+    console.log('Spent key:', JSON.stringify(colMap.spent), '| Rem key:', JSON.stringify(colMap.rem));
+    console.log('Sample row spent value:', firstRow[colMap.spent], '| rem value:', firstRow[colMap.rem]);
+    return colMap;
+}
+
+function parseNum(v) {
+    if (v === '' || v === null || v === undefined) return 0;
+    if (typeof v === 'number') return v;
+    return parseFloat(String(v).replace(',','.').replace(/[^0-9.-]/g,'')) || 0;
+}
+
+function parseExcelDate(v) {
+    if (!v) return '';
+    if (v instanceof Date) {
+        if (isNaN(v)) return '';
+        return v.toISOString().split('T')[0];
+    }
+    const s = String(v).trim();
+    // Try ISO format
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+    // Try DD-MM-YYYY or DD/MM/YYYY
+    const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+    if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    return '';
+}
+
+function rebuildAfterImport() {
+    // Rebuild resources
+    allResources.clear();
+    allStatuses.clear();
+    rawData.forEach(phase => phase.children.forEach(task => {
+        if (task.res) allResources.add(task.res);
+        const st = task.status || (task.pct >= 100 ? 'Afsluttet' : task.pct > 0 ? 'Igangværende' : 'Ikke startet');
+        allStatuses.add(st);
+    }));
+    resourceList.length = 0;
+    [...allResources].sort().forEach(r => resourceList.push(r));
+    statusList.length = 0;
+    [...allStatuses].sort().forEach(s => statusList.push(s));
+    // Rebuild UI selects
+    const resSel = document.getElementById('resourceFilter');
+    resSel.innerHTML = '<option value="">Alle ressourcer</option>';
+    resourceList.forEach(r => { const o = document.createElement('option'); o.value=r; o.textContent=r; resSel.appendChild(o); });
+    const phaseSel = document.getElementById('phaseFilter');
+    phaseSel.innerHTML = '<option value="">Alle faser</option>';
+    rawData.forEach(p => { const o = document.createElement('option'); o.value=p.id; o.textContent=p.name; phaseSel.appendChild(o); });
+    const statDrop2 = document.getElementById('statusDropdown');
+    statDrop2.innerHTML = statusList.map(s => `<label style="display:block;cursor:pointer;padding:0.2rem 0;font-size:0.8rem"><input type="checkbox" value="${s}" onchange="toggleStatusFilter(this)"> ${s}</label>`).join('');
+    // Reset state
+    expandedPhases.clear();
+    rawData.forEach(p => expandedPhases.add(p.id));
+    activeResource = ''; activePhase = ''; activeStatus = new Set();
+    // Update header stats
+    let totalH = 0, totalAct = 0;
+    rawData.forEach(p => { totalAct += p.children.length; totalH += p.hours; });
+    document.querySelector('.header div[style] p:last-child').textContent = `${totalAct} aktiviteter \u00b7 ${Math.round(totalH).toLocaleString('da-DK')} timer estimeret`;
+    render();
+}
+
+// Collect unique resources
+const allResources = new Set();
+const allStatuses = new Set();
+rawData.forEach(phase => {
+    phase.children.forEach(task => {
+        if (task.res) allResources.add(task.res);
+        const st = task.status || (task.pct >= 100 ? 'Afsluttet' : task.pct > 0 ? 'Igangværende' : 'Ikke startet');
+        allStatuses.add(st);
+    });
+});
+const resourceList = [...allResources].sort();
+const statusList = [...allStatuses].sort();
+
+// State
+let expandedPhases = new Set(rawData.map(p => p.id));
+let activeResource = '';
+let activePhase = '';
+let activeStatus = new Set();
+let onlyOverdue = false;
+let showDates = false;
+let showId = false;
+const expandedHeatmapPhases = new Set();
+const expandedResPhases = new Set();
+const expandedResGroups = new Set();
+let heatmapGroup = 'fase';
+let resChartGroup = 'fase';
+let ganttGroup = 'fase';
+let searchTerm = '';
+let heatmapMode = 'month';
+let showDeps = false;
+// Resource Group mapping for hardcoded data
+const resGroupMap = {CLN:'Konsulent',RVJ:'Konsulent',LBO:'Konsulent',SBJ:'Udvikler',TRA:'Udvikler',ARM:'Udvikler',THE:'Udvikler',AMB:'Konsulent',SNI:'Udvikler'};
+
+function init() {
+    // Populate resource filter
+    const resSel = document.getElementById('resourceFilter');
+    resourceList.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r; opt.textContent = r;
+        resSel.appendChild(opt);
+    });
+    // Populate phase filter
+    const phaseSel = document.getElementById('phaseFilter');
+    rawData.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id; opt.textContent = p.name;
+        phaseSel.appendChild(opt);
+    });
+    // Populate status filter
+    const statDrop = document.getElementById('statusDropdown');
+    statDrop.innerHTML = statusList.map(s => `<label style="display:block;cursor:pointer;padding:0.2rem 0;font-size:0.8rem"><input type="checkbox" value="${s}" onchange="toggleStatusFilter(this)"> ${s}</label>`).join('');
+    resSel.addEventListener('change', () => { activeResource = resSel.value; render(); });
+    phaseSel.addEventListener('change', () => { activePhase = phaseSel.value; render(); });
+    setHeatmapMode('month');
+    setHeatmapGroup('fase');
+    setResChartGroup('fase');
+    setGanttGroup('fase');
+    render();
+}
+
+function getFilteredData() {
+    return rawData.filter(phase => {
+        if (activePhase && phase.id !== activePhase) return false;
+        if (activeResource) {
+            const hasMatch = phase.children.some(t => t.res === activeResource);
+            if (!hasMatch) return false;
+        }
+        if (activeStatus.size > 0) {
+            const hasMatch = phase.children.some(t => activeStatus.has(t.status || (t.pct >= 100 ? 'Afsluttet' : t.pct > 0 ? 'Igangværende' : 'Ikke startet')));
+            if (!hasMatch) return false;
+        }
+        if (onlyOverdue) {
+            const hasMatch = phase.children.some(t => isOverdue(t));
+            if (!hasMatch) return false;
+        }
+        if (searchTerm) {
+            const phaseMatch = phase.name.toLowerCase().includes(searchTerm);
+            const childMatch = phase.children.some(t => t.name.toLowerCase().includes(searchTerm) || (t.res||'').toLowerCase().includes(searchTerm));
+            if (!phaseMatch && !childMatch) return false;
+        }
+        return true;
+    }).map(phase => {
+        let children = phase.children;
+        if (activeResource) children = children.filter(t => t.res === activeResource);
+        if (activeStatus.size > 0) children = children.filter(t => activeStatus.has(t.status || (t.pct >= 100 ? 'Afsluttet' : t.pct > 0 ? 'Igangværende' : 'Ikke startet')));
+        if (onlyOverdue) children = children.filter(t => isOverdue(t));
+        if (searchTerm && !phase.name.toLowerCase().includes(searchTerm)) {
+            children = children.filter(t => t.name.toLowerCase().includes(searchTerm) || (t.res||'').toLowerCase().includes(searchTerm));
+        }
+        return children === phase.children ? phase : { ...phase, children };
+    });
+}
+
+function render() {
+    searchTerm = (document.getElementById('searchInput')?.value || '').toLowerCase();
+    const data = getFilteredData();
+    renderProjectProgress(data);
+    renderKPIs(data);
+    renderTree(data);
+    renderGantt(data);
+    renderResChart(data);
+    renderHeatmap();
+    renderDepGantt();
+}
+
+function renderProjectProgress(data) {
+    let totalHours = 0, totalSpent = 0;
+    data.forEach(p => p.children.forEach(t => { totalHours += t.hours; totalSpent += t.spent; }));
+    const pct = totalHours > 0 ? Math.round(totalSpent / totalHours * 100) : 0;
+    document.getElementById('projectProgressBar').style.width = pct + '%';
+    document.getElementById('projectProgressPct').textContent = pct + '%';
+    document.getElementById('projectProgressText').textContent = `${fmt(totalSpent)} / ${fmt(totalHours)} timer`;
+}
+
+let currentMood = localStorage.getItem('pernilleMood') || '';
+function setMood(mood) {
+    currentMood = mood;
+    localStorage.setItem('pernilleMood', mood);
+    renderMood();
+}
+function renderMood() {
+    const labels = {happy:'Glad – alt kører!', neutral:'Neutral', sad:'Ked af det – udfordringer', angry:'Sur – noget skal fixes!'};
+    ['Happy','Neutral','Sad','Angry'].forEach(m => {
+        const btn = document.getElementById('mood' + m);
+        const active = currentMood === m.toLowerCase();
+        btn.style.border = active ? '2px solid var(--blue)' : '2px solid transparent';
+        btn.style.transform = active ? 'scale(1.3)' : 'scale(1)';
+    });
+    document.getElementById('moodLabel').textContent = labels[currentMood] || '';
+}
+renderMood();
+
+function renderKPIs(data) {
+    let totalHours = 0, totalSpent = 0, totalRem = 0, overdueCount = 0;
+    data.forEach(p => p.children.forEach(t => { totalHours += t.hours; totalSpent += t.spent; totalRem += t.rem; if (isOverdue(t)) overdueCount++; }));
+    const pct = totalHours > 0 ? Math.round(totalSpent / totalHours * 100) : 0;
+    document.getElementById('kpiGrid').innerHTML = `
+        <div class="kpi"><div class="kpi-value" style="color:var(--blue)">${fmt(totalHours)}</div><div class="kpi-label">Estimerede timer</div></div>
+        <div class="kpi"><div class="kpi-value" style="color:var(--green)">${fmt(totalSpent)}</div><div class="kpi-label">Forbrugte timer</div></div>
+        <div class="kpi"><div class="kpi-value" style="color:var(--amber)">${fmt(totalRem)}</div><div class="kpi-label">Resterende timer</div></div>
+        <div class="kpi"><div class="kpi-value" style="color:var(--purple)">${pct}%</div><div class="kpi-label">Samlet progression</div></div>
+        <div class="kpi clickable ${onlyOverdue ? 'active' : ''}" onclick="toggleOverdueFilter()"><div class="kpi-value" style="color:var(--red)">${overdueCount}</div><div class="kpi-label">${onlyOverdue ? '✕ Forsinkede (aktiv)' : 'Forsinkede'}</div></div>
+        <div class="kpi"><div class="kpi-value" style="color:var(--cyan)">${data.length}</div><div class="kpi-label">Faser vist</div></div>
+    `;
+    // Financial KPIs
+    const rate = 1250;
+    const budget = totalHours * rate;
+    const spent$ = totalSpent * rate;
+    const rem$ = totalRem * rate;
+    const fmtKr = (v) => v.toLocaleString('da-DK', {maximumFractionDigits: 0}) + ' kr';
+    document.getElementById('kpiFinanceGrid').innerHTML = `
+        <div class="kpi"><div class="kpi-value" style="color:var(--blue)">${fmtKr(budget)}</div><div class="kpi-label">Budget (${rate} kr/t)</div></div>
+        <div class="kpi"><div class="kpi-value" style="color:var(--green)">${fmtKr(spent$)}</div><div class="kpi-label">Forbrugt beløb</div></div>
+        <div class="kpi"><div class="kpi-value" style="color:var(--amber)">${fmtKr(rem$)}</div><div class="kpi-label">Resterende beløb</div></div>
+        <div class="kpi"><div class="kpi-value" style="color:${spent$ > budget ? 'var(--red)' : 'var(--green)'}"><span style="font-size:0.9rem">${spent$ <= budget ? '✓' : '⚠'}</span> ${fmtKr(budget - spent$)}</div><div class="kpi-label">Rest af budget</div></div>
+    `;
+}
+
+function renderTree(data) {
+    const dc = (showDates ? 'with-dates' : '') + (showId ? ' with-id' : '');
+    // Update header
+    const hdr = document.getElementById('treeHeader');
+    hdr.className = 'tree-header ' + dc;
+    const idHdr = showId ? '<span>ID</span>' : '';
+    if (showDates) {
+        hdr.innerHTML = idHdr + '<span>Opgave</span><span>Timer</span><span>Forbrugt</span><span>Rest.</span><span>Antal</span><span>Start</span><span>Slut</span><span>Indikator</span><span>Status</span><span>Resource</span><span>Progression</span>';
+    } else {
+        hdr.innerHTML = idHdr + '<span>Opgave</span><span>Timer</span><span>Forbrugt</span><span>Rest.</span><span>Antal</span><span>Indikator</span><span>Status</span><span>Resource</span><span>Progression</span>';
+    }
+    let html = '';
+    data.forEach(phase => {
+        const expanded = expandedPhases.has(phase.id);
+        const arrowCls = expanded ? '' : 'collapsed';
+        const color = phaseColors[phase.id] || 'var(--muted)';
+        const phaseHasOverdue = phase.children.some(t => isOverdue(t));
+        const phaseOverdueClass = phaseHasOverdue ? ' overdue' : '';
+        const phaseOverdueBadge = phaseHasOverdue ? `<span class="overdue-badge">${phase.children.filter(t => isOverdue(t)).length} forsinket</span>` : '';
+        const dateCols = showDates ? `<span class="date-cell" ${phase.pct < 100 && parseDate(phase.start) && parseDate(phase.start) < today ? 'style="color:var(--red);font-weight:600"' : ''}>${fmtDate(phase.start)}</span><span class="date-cell" ${phase.pct < 100 && parseDate(phase.end) && parseDate(phase.end) < today ? 'style="color:var(--red);font-weight:600"' : ''}>${fmtDate(phase.end)}</span>` : '';
+        html += `<div class="tree-row level-0 ${dc}${phaseOverdueClass}">
+            ${showId ? `<span class="id-cell">${phase.id}</span>` : ''}
+            <span class="toggle-btn" onclick="togglePhase('${phase.id}')">
+                <span class="arrow ${arrowCls}">▼</span> 
+                <span style="color:${color}">●</span> ${phase.name}
+            </span>
+            <span>${fmt(phase.hours)}</span>
+            <span>${fmt(phase.spent)}</span>
+            <span>${fmt(phase.rem)}</span>
+            <span style="font-weight:600">${phase.children.length}</span>
+            ${dateCols}
+            <span>${phaseOverdueBadge}</span>
+            <span class="status-cell"></span>
+            <span></span>
+            <span class="progress-cell">
+                <div class="progress-bar-mini"><div class="fill" style="width:${phase.pct}%;background:${color}"></div></div>
+                <span class="pct-text">${phase.pct}%</span>
+            </span>
+        </div>`;
+        if (expanded) {
+            phase.children.forEach(task => {
+                const taskPct = task.hours > 0 ? Math.round(task.spent / task.hours * 100) : (task.spent > 0 ? 100 : 0);
+                const barColor = taskPct >= 100 ? 'var(--green)' : taskPct > 0 ? 'var(--blue)' : 'var(--surface)';
+                const startOverdue = taskPct < 100 && parseDate(task.start) && parseDate(task.start) < today;
+                const endOverdue = taskPct < 100 && parseDate(task.end) && parseDate(task.end) < today;
+                const taskDateCols = showDates ? `<span class="date-cell" ${startOverdue ? 'style="color:var(--red);font-weight:600"' : ''}>${fmtDate(task.start)}</span><span class="date-cell" ${endOverdue ? 'style="color:var(--red);font-weight:600"' : ''}>${fmtDate(task.end)}</span>` : '';
+                const overdue = isOverdue(task);
+                const overdueClass = overdue ? ' overdue' : '';
+                const startNotStarted = !overdue && task.spent === 0 && parseDate(task.start) && parseDate(task.start) < today && taskPct < 100;
+                const inprogress = !overdue && !startNotStarted && taskPct > 0 && taskPct < 100;
+                const indicatorBadge = overdue ? '<span class="overdue-badge">FORSINKET</span>' : startNotStarted ? '<span class="start-overdue-badge">START OVERSKREDET</span>' : inprogress ? '<span class="inprogress-badge">IGANG</span>' : '';
+                const depBadge = getDepBadge(task);
+                html += `<div class="tree-row level-1 ${dc}${overdueClass}">
+                    ${showId ? `<span class="id-cell">${task.id}</span>` : ''}
+                    <span>${task.name}${depBadge}</span>
+                    <span>${fmt(task.hours)}</span>
+                    <span>${fmt(task.spent)}</span>
+                    <span>${fmt(task.rem)}</span>
+                    <span></span>
+                    ${taskDateCols}
+                    <span>${indicatorBadge}</span>
+                    <span class="status-cell">${task.status || (task.pct >= 100 ? 'Afsluttet' : task.pct > 0 ? 'Igangværende' : 'Ikke startet')}</span>
+                    <span>${task.res ? `<span class="resource-tag">${task.resGrp ? task.resGrp + ' / ' : ''}${task.res}</span>` : (task.resGrp ? `<span class="resource-tag">${task.resGrp}</span>` : '')}</span>
+                    <span class="progress-cell">
+                        <div class="progress-bar-mini"><div class="fill" style="width:${Math.min(100,taskPct)}%;background:${barColor}"></div></div>
+                        <span class="pct-text">${taskPct}%</span>
+                    </span>
+                </div>`;
+            });
+        }
+    });
+    document.getElementById('treeBody').innerHTML = html;
+}
+
+function renderGantt(data) {
+    if (ganttGroup === 'parent') return renderGanttByParent(data);
+    // Build month headers based on visible range
+    const months = ['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+    const startMonth = timelineStart.getMonth();
+    const endMonth = timelineEnd.getMonth();
+    const startYear = timelineStart.getFullYear();
+    const endYear = timelineEnd.getFullYear();
+    let visibleMonths = [];
+    let d = new Date(startYear, startMonth, 1);
+    while (d <= timelineEnd) {
+        visibleMonths.push(months[d.getMonth()] + (d.getFullYear() !== 2026 ? ' ' + d.getFullYear() : ''));
+        d.setMonth(d.getMonth() + 1);
+    }
+    let html = '<div class="gantt-header"><div></div><div class="gantt-status" style="font-weight:600;font-size:0.65rem">Status</div><div class="gantt-months">';
+    visibleMonths.forEach(m => html += `<div class="gantt-month">${m}</div>`);
+    html += '</div></div>';
+
+    data.forEach(phase => {
+        const color = phaseColors[phase.id] || 'var(--muted)';
+        const expanded = expandedPhases.has(phase.id);
+        // Phase bar
+        const pStart = parseDate(phase.start) || new Date('2026-01-21');
+        const pEnd = parseDate(phase.end) || new Date('2026-12-31');
+        const left = Math.max(0, dateToPct(pStart));
+        const width = Math.min(100 - left, dateToPct(pEnd) - left);
+        const progW = width * (phase.pct / 100);
+        const phaseStatus = phase.pct >= 100 ? 'Afsluttet' : phase.pct > 0 ? 'Igangværende' : 'Ikke startet';
+
+        html += `<div class="gantt-row">
+            <div class="gantt-label level-0" style="cursor:pointer" onclick="togglePhase('${phase.id}')">${expanded ? '▼' : '▶'} ${idPfx(phase.id)}${phase.name}</div>
+            <div class="gantt-status">${phaseStatus}</div>
+            <div class="gantt-track">
+                <div class="gantt-bar" style="left:${left}%;width:${width}%;background:${color};opacity:0.25"></div>
+                <div class="gantt-bar" style="left:${left}%;width:${progW}%;background:${color}">
+                    ${phase.pct > 8 ? phase.pct+'%' : ''}
+                    <div class="tooltip"><strong>${phase.name}</strong><br>${phase.start||'?'} → ${phase.end||'?'}<br>${phase.spent}/${phase.hours} t (${phase.pct}%)</div>
+                </div>
+                <div class="gantt-today" style="left:${getTodayPct()}%"></div>
+            </div>
+        </div>`;
+
+        // Children
+        if (expanded) {
+            phase.children.forEach(task => {
+                const tStart = parseDate(task.start) || pStart;
+                const tEnd = parseDate(task.end) || pEnd;
+                const tLeft = Math.max(0, dateToPct(tStart));
+                const tWidth = Math.max(0.5, Math.min(100 - tLeft, dateToPct(tEnd) - tLeft));
+                const tPct = task.hours > 0 ? Math.round(task.spent / task.hours * 100) : (task.spent > 0 ? 100 : 0);
+                const tProgW = tWidth * (Math.min(100, tPct) / 100);
+                const tColor = tPct >= 100 ? 'var(--green)' : color;
+                const tStatus = task.status || (tPct >= 100 ? 'Afsluttet' : tPct > 0 ? 'Igangværende' : 'Ikke startet');
+
+                html += `<div class="gantt-row">
+                    <div class="gantt-label level-1">${idPfx(task.id)}${task.name}</div>
+                    <div class="gantt-status">${tStatus}</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar" style="left:${tLeft}%;width:${tWidth}%;background:${tColor};opacity:0.2"></div>
+                        <div class="gantt-bar" style="left:${tLeft}%;width:${tProgW}%;background:${tColor}">
+                            ${tPct > 8 ? tPct+'%' : ''}
+                            <div class="tooltip"><strong>${task.name}</strong><br>Resource: ${task.res||'-'}<br>${task.start||'?'} → ${task.end||'?'}<br>${task.spent}/${task.hours} t (${tPct}%)</div>
+                        </div>
+                        <div class="gantt-today" style="left:${getTodayPct()}%"></div>
+                    </div>
+                </div>`;
+            });
+        }
+    });
+    document.getElementById('ganttChart').innerHTML = html;
+    if (showDeps) renderDepsArrows(data);
+}
+
+function renderGanttByParent(data) {
+    const months = ['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+    let visibleMonths = [];
+    let d = new Date(timelineStart.getFullYear(), timelineStart.getMonth(), 1);
+    while (d <= timelineEnd) {
+        visibleMonths.push(months[d.getMonth()] + (d.getFullYear() !== 2026 ? ' ' + d.getFullYear() : ''));
+        d.setMonth(d.getMonth() + 1);
+    }
+
+    // Group phases under parent (ID % 1000 === 0)
+    const parentMap = {};
+    data.forEach(p => {
+        const num = parseInt(p.id, 10);
+        const isParent = !isNaN(num) && num % 1000 === 0;
+        const parentId = isParent ? p.id : getParentPhaseId(p.id);
+        if (!parentMap[parentId]) {
+            const pp = data.find(x => x.id === parentId);
+            parentMap[parentId] = {id: parentId, name: pp ? pp.name : parentId, start: pp ? pp.start : p.start, end: pp ? pp.end : p.end, pct: 0, hours: 0, spent: 0, children: []};
+        }
+        parentMap[parentId].hours += p.hours || 0;
+        parentMap[parentId].spent += p.spent || 0;
+        p.children.forEach(t => {
+            parentMap[parentId].hours += t.hours;
+            parentMap[parentId].spent += t.spent;
+        });
+        if (!isParent) {
+            parentMap[parentId].children.push(p);
+        } else {
+            // Use this phase's date range
+            parentMap[parentId].start = p.start;
+            parentMap[parentId].end = p.end;
+        }
+    });
+    // Calc pct
+    Object.values(parentMap).forEach(pm => { pm.pct = pm.hours > 0 ? Math.round(pm.spent / pm.hours * 100) : 0; });
+
+    let html = '<div class="gantt-header"><div></div><div class="gantt-status" style="font-weight:600;font-size:0.65rem">Status</div><div class="gantt-months">';
+    visibleMonths.forEach(m => html += `<div class="gantt-month">${m}</div>`);
+    html += '</div></div>';
+
+    const sortedParents = Object.keys(parentMap).sort((a,b) => parseInt(a,10) - parseInt(b,10));
+    sortedParents.forEach(pid => {
+        const pm = parentMap[pid];
+        if (pm.hours === 0 && pm.spent === 0) return;
+        const color = phaseColors[pid] || 'var(--muted)';
+        const expanded = expandedPhases.has(pid);
+        const pStart = parseDate(pm.start) || new Date('2026-01-21');
+        const pEnd = parseDate(pm.end) || new Date('2026-12-31');
+        const left = Math.max(0, dateToPct(pStart));
+        const width = Math.min(100 - left, dateToPct(pEnd) - left);
+        const progW = width * (pm.pct / 100);
+        const pStatus = pm.pct >= 100 ? 'Afsluttet' : pm.pct > 0 ? 'Igangværende' : 'Ikke startet';
+
+        html += `<div class="gantt-row">
+            <div class="gantt-label level-0" style="cursor:pointer" onclick="togglePhase('${pid}')">${expanded ? '▼' : '▶'} ${idPfx(pid)}${pm.name}</div>
+            <div class="gantt-status">${pStatus}</div>
+            <div class="gantt-track">
+                <div class="gantt-bar" style="left:${left}%;width:${width}%;background:${color};opacity:0.25"></div>
+                <div class="gantt-bar" style="left:${left}%;width:${progW}%;background:${color}">
+                    ${pm.pct > 8 ? pm.pct+'%' : ''}
+                    <div class="tooltip"><strong>${pm.name}</strong><br>${pm.start||'?'} → ${pm.end||'?'}<br>${pm.spent}/${pm.hours} t (${pm.pct}%)</div>
+                </div>
+                <div class="gantt-today" style="left:${getTodayPct()}%"></div>
+            </div>
+        </div>`;
+
+        if (expanded) {
+            pm.children.forEach(child => {
+                const cStart = parseDate(child.start) || pStart;
+                const cEnd = parseDate(child.end) || pEnd;
+                const cLeft = Math.max(0, dateToPct(cStart));
+                const cWidth = Math.max(0.5, Math.min(100 - cLeft, dateToPct(cEnd) - cLeft));
+                const cProgW = cWidth * (child.pct / 100);
+                const cColor = child.pct >= 100 ? 'var(--green)' : color;
+                const cStatus = child.pct >= 100 ? 'Afsluttet' : child.pct > 0 ? 'Igangværende' : 'Ikke startet';
+                html += `<div class="gantt-row">
+                    <div class="gantt-label level-1">${idPfx(child.id)}${child.name}</div>
+                    <div class="gantt-status">${cStatus}</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar" style="left:${cLeft}%;width:${cWidth}%;background:${cColor};opacity:0.2"></div>
+                        <div class="gantt-bar" style="left:${cLeft}%;width:${cProgW}%;background:${cColor}">
+                            ${child.pct > 8 ? child.pct+'%' : ''}
+                            <div class="tooltip"><strong>${child.name}</strong><br>${child.start||'?'} → ${child.end||'?'}<br>${child.spent}/${child.hours} t (${child.pct}%)</div>
+                        </div>
+                        <div class="gantt-today" style="left:${getTodayPct()}%"></div>
+                    </div>
+                </div>`;
+            });
+        }
+    });
+    document.getElementById('ganttChart').innerHTML = html;
+}
+
+function setGanttGroup(mode) {
+    ganttGroup = mode;
+    ['fase','parent'].forEach(m => {
+        const btn = document.getElementById('ganttGroup' + m.charAt(0).toUpperCase() + m.slice(1) + 'Btn');
+        if (btn) { btn.style.background = mode === m ? 'var(--blue)' : ''; btn.style.color = mode === m ? 'white' : ''; }
+    });
+    render();
+}
+
+function renderDepsArrows(data) {
+    // Build flat list of visible tasks with their row index and position info
+    const taskPositions = {}; // id -> {rowIdx, left, right}
+    let rowIdx = 0;
+    data.forEach(phase => {
+        const pStart = parseDate(phase.start) || new Date('2026-01-21');
+        const pEnd = parseDate(phase.end) || new Date('2026-12-31');
+        taskPositions[phase.id] = {rowIdx, left: Math.max(0, dateToPct(pStart)), right: Math.max(0, dateToPct(pEnd))};
+        rowIdx++;
+        if (expandedPhases.has(phase.id)) {
+            phase.children.forEach(task => {
+                const tStart = parseDate(task.start) || pStart;
+                const tEnd = parseDate(task.end) || pEnd;
+                taskPositions[task.id] = {rowIdx, left: Math.max(0, dateToPct(tStart)), right: Math.min(100, dateToPct(tEnd))};
+                rowIdx++;
+            });
+        }
+    });
+    const rowH = 26; // approximate row height in px
+    const headerH = 24;
+    let svgLines = '';
+    data.forEach(phase => {
+        if (!expandedPhases.has(phase.id)) return;
+        phase.children.forEach(task => {
+            if (!task.deps) return;
+            const depIds = getDepsArray(task);
+            const target = taskPositions[task.id];
+            if (!target) return;
+            depIds.forEach(depId => {
+                const source = taskPositions[depId];
+                if (!source) return;
+                const x1 = source.right; // percentage
+                const y1 = headerH + source.rowIdx * rowH + rowH/2;
+                const x2 = target.left;
+                const y2 = headerH + target.rowIdx * rowH + rowH/2;
+                svgLines += `<line x1="${x1}%" y1="${y1}" x2="${x2}%" y2="${y2}" stroke="var(--purple)" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#arrowhead)"/>`;
+            });
+        });
+    });
+    if (!svgLines) return;
+    const totalH = headerH + rowIdx * rowH;
+    const svg = `<svg class="gantt-deps-svg" style="height:${totalH}px;width:calc(100% - 220px)">
+        <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--purple)" opacity="0.7"/></marker></defs>
+        ${svgLines}
+    </svg>`;
+    document.getElementById('ganttChart').insertAdjacentHTML('beforeend', svg);
+}
+
+function togglePhase(id) {
+    if (expandedPhases.has(id)) expandedPhases.delete(id);
+    else expandedPhases.add(id);
+    render();
+}
+
+function expandAll() { rawData.forEach(p => expandedPhases.add(p.id)); render(); }
+function collapseAll() { expandedPhases.clear(); render(); }
+function toggleAllPhases() { if (expandedPhases.size === rawData.length) { collapseAll(); } else { expandAll(); } }
+function toggleOverdueFilter() { onlyOverdue = !onlyOverdue; render(); }
+function toggleSec(h2) {
+    h2.classList.toggle('closed');
+    h2.nextElementSibling.classList.toggle('closed');
+}
+function toggleAllSections() {
+    const toggles = document.querySelectorAll('.sec-toggle');
+    const allClosed = [...toggles].every(t => t.classList.contains('closed'));
+    toggles.forEach(t => {
+        if (allClosed) { t.classList.remove('closed'); t.nextElementSibling.classList.remove('closed'); }
+        else { t.classList.add('closed'); t.nextElementSibling.classList.add('closed'); }
+    });
+}
+function toggleDates() {
+    showDates = !showDates;
+    document.getElementById('toggleDatesBtn').textContent = showDates ? 'Skjul datoer' : 'Vis datoer';
+    render();
+}
+
+function toggleId() {
+    showId = !showId;
+    document.getElementById('toggleIdBtn').textContent = showId ? 'Skjul ID' : 'Vis ID';
+    render();
+}
+
+function toggleStatusDropdown() {
+    const dd = document.getElementById('statusDropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+function toggleStatusFilter(cb) {
+    if (cb.checked) activeStatus.add(cb.value); else activeStatus.delete(cb.value);
+    const btn = document.getElementById('statusMultiBtn');
+    btn.textContent = activeStatus.size === 0 ? 'Alle statusser ▾' : [...activeStatus].join(', ') + ' ▾';
+    render();
+}
+// Close status dropdown on outside click
+document.addEventListener('click', (e) => {
+    const multi = document.getElementById('statusMulti');
+    if (multi && !multi.contains(e.target)) document.getElementById('statusDropdown').style.display = 'none';
+});
+
+function isOverdue(task) {
+    if (!task.end || task.pct >= 100) return false;
+    const end = parseDate(task.end);
+    return end && end < today;
+}
+
+function toggleDeps() {
+    showDeps = !showDeps;
+    document.getElementById('toggleDepsBtn').textContent = showDeps ? 'Skjul afhængigheder' : 'Vis afhængigheder';
+    render();
+}
+
+function toggleHelp() {
+    document.getElementById('helpPanel').classList.toggle('visible');
+}
+
+// Build a lookup map: task id → task object (for dependency resolution)
+function buildTaskIndex() {
+    const idx = {};
+    rawData.forEach(p => {
+        idx[p.id] = p;
+        p.children.forEach(t => { idx[t.id] = t; });
+    });
+    return idx;
+}
+
+function getDepsArray(task) {
+    if (!task.deps) return [];
+    return task.deps.split(/[,;\/]/).map(s => s.trim()).filter(Boolean);
+}
+
+function getDepBadge(task) {
+    if (!showDeps || !task.deps) return '';
+    const depIds = getDepsArray(task);
+    const idx = buildTaskIndex();
+    const names = depIds.map(id => { const t = idx[id]; return t ? `${id}: ${t.name}` : id; }).join('\\n');
+    return `<span class="dep-badge" title="Afhænger af:\\n${names}">🔗${depIds.length}</span>`;
+}
+
+function getResGroup(t) {
+    // resGrp may contain a group code (e.g. "CLN") rather than a group name — look it up in resGroupMap
+    const grp = t.resGrp || '';
+    return resGroupMap[grp] || grp || resGroupMap[t.res] || t.res || '(ingen gruppe)';
+}
+
+function idPfx(id) { return showId && id ? id + ' ' : ''; }
+
+function renderResChart(data) {
+    if (resChartGroup === 'group') return renderResChartByGroup(data);
+    if (resChartGroup === 'res') return renderResChartByResource(data);
+    if (resChartGroup === 'parent') return renderResChartByParent(data);
+    // Phase-grouped view (default)
+    let globalMax = 0;
+    data.forEach(p => {
+        let phaseH = 0, phaseS = 0;
+        p.children.forEach(t => { phaseH += t.hours; phaseS += t.spent; });
+        const m = Math.max(phaseH, phaseS);
+        if (m > globalMax) globalMax = m;
+    });
+    if (globalMax === 0) globalMax = 1;
+
+    let html = '';
+    data.forEach(p => {
+        let phaseHours = 0, phaseSpent = 0;
+        const resMap = {};
+        p.children.forEach(t => {
+            phaseHours += t.hours;
+            phaseSpent += t.spent;
+            if (!t.res) return;
+            if (!resMap[t.res]) resMap[t.res] = {hours:0,spent:0};
+            resMap[t.res].hours += t.hours;
+            resMap[t.res].spent += t.spent;
+        });
+        if (phaseHours === 0 && phaseSpent === 0) return;
+        const expanded = expandedResPhases.has(p.id);
+        const arrow = expanded ? '\u25BC' : '\u25B6';
+        const estW = (phaseHours / globalMax * 100);
+        const spentW = (phaseSpent / globalMax * 100);
+        const phasePct = phaseHours > 0 ? Math.round(phaseSpent / phaseHours * 100) : (phaseSpent > 0 ? '∞' : 0);
+        const color = phaseSpent > phaseHours && phaseHours > 0 ? 'var(--red)' : 'var(--green)';
+        html += `<div class="res-bar-row" style="cursor:pointer" onclick="toggleResPhase('${p.id}')">
+            <span class="res-bar-label" style="font-weight:700">${arrow} ${idPfx(p.id)}${p.name}</span>
+            <div class="res-bar-track">
+                <div class="res-bar-est" style="width:${estW}%;background:var(--blue)"></div>
+                <div class="res-bar-spent" style="width:${spentW}%;background:${color}">${spentW > 8 ? phasePct + '%' : ''}</div>
+            </div>
+            <span class="res-bar-text" style="font-weight:700">${fmt(phaseSpent)}/${fmt(phaseHours)} t</span>
+        </div>`;
+        if (expanded) {
+            const sorted = Object.entries(resMap).sort((a,b) => b[1].hours - a[1].hours);
+            sorted.forEach(([res, d]) => {
+                const rEstW = (d.hours / globalMax * 100);
+                const rSpentW = (d.spent / globalMax * 100);
+                const rPct = d.hours > 0 ? Math.round(d.spent / d.hours * 100) : (d.spent > 0 ? '∞' : 0);
+                const rColor = d.spent > d.hours && d.hours > 0 ? 'var(--red)' : 'var(--green)';
+                html += `<div class="res-bar-row" style="padding-left:1.5rem">
+                    <span class="res-bar-label">${res}</span>
+                    <div class="res-bar-track">
+                        <div class="res-bar-est" style="width:${rEstW}%;background:var(--blue)"></div>
+                        <div class="res-bar-spent" style="width:${rSpentW}%;background:${rColor}">${rSpentW > 8 ? rPct + '%' : ''}</div>
+                    </div>
+                    <span class="res-bar-text">${fmt(d.spent)}/${fmt(d.hours)} t</span>
+                </div>`;
+            });
+        }
+    });
+    document.getElementById('resChart').innerHTML = html;
+}
+
+function renderResChartByGroup(data) {
+    // Group by Resource Group No. -> individual resources
+    const groups = {};
+    data.forEach(p => p.children.forEach(t => {
+        if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+        const grp = getResGroup(t);
+        if (!groups[grp]) groups[grp] = {};
+        if (!groups[grp][t.res]) groups[grp][t.res] = {hours:0,spent:0};
+        groups[grp][t.res].hours += t.hours;
+        groups[grp][t.res].spent += t.spent;
+    }));
+    let globalMax = 0;
+    Object.values(groups).forEach(resMap => {
+        let grpH = 0, grpS = 0;
+        Object.values(resMap).forEach(d => { grpH += d.hours; grpS += d.spent; });
+        if (Math.max(grpH, grpS) > globalMax) globalMax = Math.max(grpH, grpS);
+    });
+    if (globalMax === 0) globalMax = 1;
+
+    const sortedGroups = Object.keys(groups).sort();
+    let html = '';
+    sortedGroups.forEach(grp => {
+        const resMap = groups[grp];
+        let grpHours = 0, grpSpent = 0;
+        Object.values(resMap).forEach(d => { grpHours += d.hours; grpSpent += d.spent; });
+        const expanded = expandedResGroups.has(grp);
+        const arrow = expanded ? '\u25BC' : '\u25B6';
+        const estW = (grpHours / globalMax * 100);
+        const spentW = (grpSpent / globalMax * 100);
+        const grpPct = grpHours > 0 ? Math.round(grpSpent / grpHours * 100) : (grpSpent > 0 ? '∞' : 0);
+        const color = grpSpent > grpHours && grpHours > 0 ? 'var(--red)' : 'var(--green)';
+        html += `<div class="res-bar-row" style="cursor:pointer" onclick="toggleResGroup('${grp}')">
+            <span class="res-bar-label" style="font-weight:700">${arrow} ${grp}</span>
+            <div class="res-bar-track">
+                <div class="res-bar-est" style="width:${estW}%;background:var(--blue)"></div>
+                <div class="res-bar-spent" style="width:${spentW}%;background:${color}">${spentW > 8 ? grpPct + '%' : ''}</div>
+            </div>
+            <span class="res-bar-text" style="font-weight:700">${fmt(grpSpent)}/${fmt(grpHours)} t</span>
+        </div>`;
+        if (expanded) {
+            const sorted = Object.entries(resMap).sort((a,b) => b[1].hours - a[1].hours);
+            sorted.forEach(([res, d]) => {
+                const rEstW = (d.hours / globalMax * 100);
+                const rSpentW = (d.spent / globalMax * 100);
+                const rPct = d.hours > 0 ? Math.round(d.spent / d.hours * 100) : (d.spent > 0 ? '∞' : 0);
+                const rColor = d.spent > d.hours && d.hours > 0 ? 'var(--red)' : 'var(--green)';
+                html += `<div class="res-bar-row" style="padding-left:1.5rem">
+                    <span class="res-bar-label">${res}</span>
+                    <div class="res-bar-track">
+                        <div class="res-bar-est" style="width:${rEstW}%;background:var(--blue)"></div>
+                        <div class="res-bar-spent" style="width:${rSpentW}%;background:${rColor}">${rSpentW > 8 ? rPct + '%' : ''}</div>
+                    </div>
+                    <span class="res-bar-text">${fmt(d.spent)}/${fmt(d.hours)} t</span>
+                </div>`;
+            });
+        }
+    });
+    document.getElementById('resChart').innerHTML = html;
+}
+
+function renderResChartByResource(data) {
+    // Flat view: each resource as a single bar (no grouping/expand)
+    const resMap = {};
+    data.forEach(p => p.children.forEach(t => {
+        if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+        if (!resMap[t.res]) resMap[t.res] = {hours:0, spent:0};
+        resMap[t.res].hours += t.hours;
+        resMap[t.res].spent += t.spent;
+    }));
+    let globalMax = 0;
+    Object.values(resMap).forEach(d => { const m = Math.max(d.hours, d.spent); if (m > globalMax) globalMax = m; });
+    if (globalMax === 0) globalMax = 1;
+    const sorted = Object.entries(resMap).sort((a,b) => b[1].hours - a[1].hours);
+    let html = '';
+    sorted.forEach(([res, d]) => {
+        const estW = (d.hours / globalMax * 100);
+        const spentW = (d.spent / globalMax * 100);
+        const resPct = d.hours > 0 ? Math.round(d.spent / d.hours * 100) : (d.spent > 0 ? '∞' : 0);
+        const color = d.spent > d.hours && d.hours > 0 ? 'var(--red)' : 'var(--green)';
+        html += `<div class="res-bar-row">
+            <span class="res-bar-label" style="font-weight:700">${res}</span>
+            <div class="res-bar-track">
+                <div class="res-bar-est" style="width:${estW}%;background:var(--blue)"></div>
+                <div class="res-bar-spent" style="width:${spentW}%;background:${color}">${spentW > 8 ? resPct + '%' : ''}</div>
+            </div>
+            <span class="res-bar-text" style="font-weight:700">${fmt(d.spent)}/${fmt(d.hours)} t</span>
+        </div>`;
+    });
+    document.getElementById('resChart').innerHTML = html;
+}
+
+function getParentPhaseId(phaseId) {
+    // Parent phase = nearest lower ID that is divisible by 1000
+    const num = parseInt(phaseId, 10);
+    if (isNaN(num)) return phaseId;
+    if (num % 1000 === 0) return phaseId;
+    return String(Math.floor(num / 1000) * 1000).padStart(phaseId.length, '0');
+}
+
+function renderResChartByParent(data) {
+    // Group phases under their parent phase (ID % 1000 === 0)
+    const parentMap = {}; // parentId -> {name, phases: [{name, hours, spent}]}
+    data.forEach(p => {
+        const num = parseInt(p.id, 10);
+        const isParent = !isNaN(num) && num % 1000 === 0;
+        const parentId = isParent ? p.id : getParentPhaseId(p.id);
+        if (!parentMap[parentId]) {
+            // Find parent name from data
+            const parentPhase = data.find(pp => pp.id === parentId);
+            parentMap[parentId] = {name: parentPhase ? parentPhase.name : parentId, hours:0, spent:0, children: []};
+        }
+        const phaseHours = p.children.reduce((s,t) => s + t.hours, 0);
+        const phaseSpent = p.children.reduce((s,t) => s + t.spent, 0);
+        parentMap[parentId].hours += phaseHours;
+        parentMap[parentId].spent += phaseSpent;
+        if (!isParent) {
+            parentMap[parentId].children.push({id: p.id, name: p.name, hours: phaseHours, spent: phaseSpent});
+        }
+    });
+
+    let globalMax = 0;
+    Object.values(parentMap).forEach(d => { const m = Math.max(d.hours, d.spent); if (m > globalMax) globalMax = m; });
+    if (globalMax === 0) globalMax = 1;
+
+    const sortedParents = Object.keys(parentMap).sort((a,b) => parseInt(a,10) - parseInt(b,10));
+    let html = '';
+    sortedParents.forEach(pid => {
+        const pm = parentMap[pid];
+        if (pm.hours === 0 && pm.spent === 0) return;
+        const hasChildren = pm.children.length > 0;
+        const expanded = expandedResPhases.has(pid);
+        const arrow = hasChildren ? (expanded ? '\u25BC' : '\u25B6') : '\u00A0\u00A0';
+        const estW = (pm.hours / globalMax * 100);
+        const spentW = (pm.spent / globalMax * 100);
+        const pmPct = pm.hours > 0 ? Math.round(pm.spent / pm.hours * 100) : (pm.spent > 0 ? '∞' : 0);
+        const color = pm.spent > pm.hours && pm.hours > 0 ? 'var(--red)' : 'var(--green)';
+        html += `<div class="res-bar-row" style="${hasChildren ? 'cursor:pointer' : ''}" ${hasChildren ? `onclick="toggleResPhase('${pid}')"` : ''}>
+            <span class="res-bar-label" style="font-weight:700">${arrow} ${idPfx(pid)}${pm.name}</span>
+            <div class="res-bar-track">
+                <div class="res-bar-est" style="width:${estW}%;background:var(--blue)"></div>
+                <div class="res-bar-spent" style="width:${spentW}%;background:${color}">${spentW > 8 ? pmPct + '%' : ''}</div>
+            </div>
+            <span class="res-bar-text" style="font-weight:700">${fmt(pm.spent)}/${fmt(pm.hours)} t</span>
+        </div>`;
+        if (expanded && hasChildren) {
+            pm.children.forEach(child => {
+                const cEstW = (child.hours / globalMax * 100);
+                const cSpentW = (child.spent / globalMax * 100);
+                const cPct = child.hours > 0 ? Math.round(child.spent / child.hours * 100) : (child.spent > 0 ? '∞' : 0);
+                const cColor = child.spent > child.hours && child.hours > 0 ? 'var(--red)' : 'var(--green)';
+                html += `<div class="res-bar-row" style="padding-left:1.5rem">
+                    <span class="res-bar-label">${idPfx(child.id)}${child.name}</span>
+                    <div class="res-bar-track">
+                        <div class="res-bar-est" style="width:${cEstW}%;background:var(--blue)"></div>
+                        <div class="res-bar-spent" style="width:${cSpentW}%;background:${cColor}">${cSpentW > 8 ? cPct + '%' : ''}</div>
+                    </div>
+                    <span class="res-bar-text">${fmt(child.spent)}/${fmt(child.hours)} t</span>
+                </div>`;
+            });
+        }
+    });
+    document.getElementById('resChart').innerHTML = html;
+}
+
+function setResChartGroup(mode) {
+    resChartGroup = mode;
+    ['fase','res','group','parent'].forEach(m => {
+        const btn = document.getElementById('resChart' + m.charAt(0).toUpperCase() + m.slice(1) + 'Btn');
+        if (btn) { btn.style.background = mode === m ? 'var(--blue)' : ''; btn.style.color = mode === m ? 'white' : ''; }
+    });
+    render();
+}
+
+function toggleResPhases() {
+    const data = getFilteredData();
+    if (resChartGroup === 'group') {
+        const groups = new Set();
+        data.forEach(p => p.children.forEach(t => { if (t.res) groups.add(getResGroup(t)); }));
+        if (expandedResGroups.size === groups.size) { expandedResGroups.clear(); } else { groups.forEach(g => expandedResGroups.add(g)); }
+    } else if (resChartGroup === 'parent') {
+        const parentIds = new Set();
+        data.forEach(p => { const num = parseInt(p.id, 10); if (!isNaN(num) && num % 1000 === 0) parentIds.add(p.id); });
+        if (expandedResPhases.size >= parentIds.size) { expandedResPhases.clear(); } else { parentIds.forEach(id => expandedResPhases.add(id)); }
+    } else if (resChartGroup === 'fase') {
+        if (expandedResPhases.size === data.length) { expandedResPhases.clear(); } else { data.forEach(p => expandedResPhases.add(p.id)); }
+    }
+    render();
+}
+function toggleResPhase(phaseId) {
+    if (expandedResPhases.has(phaseId)) expandedResPhases.delete(phaseId); else expandedResPhases.add(phaseId);
+    render();
+}
+function toggleResGroup(grp) {
+    if (expandedResGroups.has(grp)) expandedResGroups.delete(grp); else expandedResGroups.add(grp);
+    render();
+}
+
+function renderDepGantt() {
+    const idx = buildTaskIndex();
+    // Collect all tasks with dependencies
+    const depTasks = [];
+    rawData.forEach(p => p.children.forEach(t => {
+        if (!t.deps) return;
+        const depIds = getDepsArray(t);
+        depIds.forEach(depId => {
+            const pred = idx[depId];
+            if (pred) depTasks.push({task: t, pred, phase: p});
+        });
+    }));
+
+    if (depTasks.length === 0) {
+        document.getElementById('depGanttSection').style.display = 'none';
+        return;
+    }
+    document.getElementById('depGanttSection').style.display = '';
+
+    let issueCount = 0;
+    let okCount = 0;
+    let html = '';
+
+    // Month header
+    const months = ['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+    html += '<div class="dep-gantt-row"><div></div><div style="display:flex">';
+    months.forEach(m => html += `<div style="flex:1;text-align:center;font-size:0.65rem;color:var(--muted);font-weight:600;text-transform:uppercase">${m}</div>`);
+    html += '</div></div>';
+
+    depTasks.forEach(({task, pred, phase}) => {
+        const predStart = parseDate(pred.start) || parseDate(phase.start) || timelineStart;
+        const predEnd = parseDate(pred.end) || parseDate(phase.end) || timelineEnd;
+        const taskStart = parseDate(task.start) || parseDate(phase.start) || timelineStart;
+        const taskEnd = parseDate(task.end) || parseDate(phase.end) || timelineEnd;
+
+        // Check overlap: task starts before predecessor ends
+        const hasOverlap = taskStart < predEnd && task.pct < 100 && pred.pct < 100;
+        if (hasOverlap) issueCount++; else okCount++;
+
+        const predLeft = Math.max(0, dateToPct(predStart));
+        const predWidth = Math.max(0.5, Math.min(100 - predLeft, dateToPct(predEnd) - predLeft));
+        const taskLeft = Math.max(0, dateToPct(taskStart));
+        const taskWidth = Math.max(0.5, Math.min(100 - taskLeft, dateToPct(taskEnd) - taskLeft));
+
+        // Overlap zone
+        let overlapHtml = '';
+        if (hasOverlap) {
+            const oLeft = Math.max(predLeft, taskLeft);
+            const oRight = Math.min(predLeft + predWidth, taskLeft + taskWidth);
+            if (oRight > oLeft) {
+                overlapHtml = `<div class="dep-gantt-bar overlap-zone" style="left:${oLeft}%;width:${oRight - oLeft}%"></div>`;
+            }
+        }
+
+        // Arrow from pred end to task start
+        const arrowLeft = Math.min(predLeft + predWidth, taskLeft);
+        const arrowWidth = Math.max(0, taskLeft - (predLeft + predWidth));
+        const arrowHtml = arrowWidth > 0.3 ? `<div class="dep-gantt-arrow" style="left:${arrowLeft}%;width:${arrowWidth}%"></div>` : '';
+
+        const issueLabel = hasOverlap ? '<span class="issue">⚠️ OVERLAP</span>' : '';
+        const predColor = 'var(--muted)';
+        const taskColor = hasOverlap ? 'var(--red)' : 'var(--purple)';
+
+        html += `<div class="dep-gantt-row">
+            <div class="dep-gantt-label">${pred.name} → ${task.name}${issueLabel}</div>
+            <div class="dep-gantt-track">
+                <div class="dep-gantt-bar predecessor" style="left:${predLeft}%;width:${predWidth}%;background:${predColor}" title="${pred.name}: ${pred.start||'?'}–${pred.end||'?'}"></div>
+                <div class="dep-gantt-bar" style="left:${taskLeft}%;width:${taskWidth}%;background:${taskColor}" title="${task.name}: ${task.start||'?'}–${task.end||'?'}"></div>
+                ${overlapHtml}
+                ${arrowHtml}
+                <div class="gantt-today" style="left:${getTodayPct()}%"></div>
+            </div>
+        </div>`;
+    });
+
+    document.getElementById('depGanttSummary').innerHTML = `${depTasks.length} afh\u00e6ngigheder analyseret: <span class="count-ok">${okCount} OK</span> \u00b7 <span class="count-issue">${issueCount} med overlap</span>`;
+    document.getElementById('depGanttChart').innerHTML = html;
+}
+
+function setHeatmapMode(mode) {
+    heatmapMode = mode;
+    document.getElementById('heatmapMonthBtn').style.background = mode === 'month' ? 'var(--blue)' : '';
+    document.getElementById('heatmapMonthBtn').style.color = mode === 'month' ? 'white' : '';
+    document.getElementById('heatmapWeekBtn').style.background = mode === 'week' ? 'var(--blue)' : '';
+    document.getElementById('heatmapWeekBtn').style.color = mode === 'week' ? 'white' : '';
+    renderHeatmap();
+}
+
+function setHeatmapGroup(grp) {
+    heatmapGroup = grp;
+    ['fase','res','group','parent'].forEach(m => {
+        const btn = document.getElementById('heatmapGroup' + m.charAt(0).toUpperCase() + m.slice(1) + 'Btn');
+        if (btn) { btn.style.background = grp === m ? 'var(--blue)' : ''; btn.style.color = grp === m ? 'white' : ''; }
+    });
+    renderHeatmap();
+}
+
+function toggleHeatmapPhases() {
+    if (expandedHeatmapPhases.size === rawData.length) { expandedHeatmapPhases.clear(); } else { rawData.forEach(p => expandedHeatmapPhases.add(p.id)); }
+    renderHeatmap();
+}
+function toggleHeatmapPhase(phaseId) {
+    if (expandedHeatmapPhases.has(phaseId)) expandedHeatmapPhases.delete(phaseId); else expandedHeatmapPhases.add(phaseId);
+    renderHeatmap();
+}
+
+function heatColor(intensity) {
+    // 0=green, 0.5=yellow, 1=red with smooth gradient
+    if (intensity <= 0) return {bg: 'transparent', color: 'var(--muted)'};
+    const t = Math.min(1, intensity);
+    let r, g, b;
+    if (t <= 0.5) {
+        // green to yellow
+        const p = t / 0.5;
+        r = Math.round(34 + p * (234 - 34));
+        g = Math.round(197 - p * (197 - 179));
+        b = Math.round(94 - p * 94);
+    } else {
+        // yellow to red
+        const p = (t - 0.5) / 0.5;
+        r = Math.round(234 + p * (239 - 234));
+        g = Math.round(179 - p * 179);
+        b = Math.round(0 + p * 68);
+    }
+    const alpha = 0.3 + t * 0.55;
+    const bg = `rgba(${r},${g},${b},${alpha})`;
+    const color = t > 0.65 ? 'white' : t > 0.35 ? '#1e293b' : 'var(--muted)';
+    return {bg, color};
+}
+
+function renderHeatmap() {
+    if (heatmapMode === 'week') return renderHeatmapWeekly();
+    const months = ['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+
+    if (heatmapGroup === 'res' || heatmapGroup === 'group') {
+        // Flat resource or resource-group view
+        const resMonths = {};
+        rawData.forEach(p => p.children.forEach(t => {
+            if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+            const hrsToDistribute = t.hours || t.spent;
+            const key = heatmapGroup === 'group' ? getResGroup(t) : t.res;
+            const s = parseDate(t.start) || parseDate(p.start) || new Date('2026-01-01');
+            const e = parseDate(t.end) || parseDate(p.end) || new Date('2026-12-31');
+            const days = Math.max(1, (e - s) / 86400000);
+            const hoursPerDay = hrsToDistribute / days;
+            if (!resMonths[key]) resMonths[key] = new Array(12).fill(0);
+            let cur = new Date(s);
+            while (cur <= e) {
+                const m = cur.getMonth();
+                const daysInMonth = Math.min(
+                    new Date(cur.getFullYear(), m + 1, 0).getDate() - cur.getDate() + 1,
+                    Math.ceil((e - cur) / 86400000) + 1
+                );
+                resMonths[key][m] += hoursPerDay * daysInMonth;
+                cur = new Date(cur.getFullYear(), m + 1, 1);
+            }
+        }));
+        const sortedRes = Object.keys(resMonths).sort();
+        let maxVal = 0;
+        sortedRes.forEach(r => resMonths[r].forEach(v => { if (v > maxVal) maxVal = v; }));
+        const headerLabel = heatmapGroup === 'group' ? 'Res.Group' : 'Ressource';
+        let html = `<thead><tr><th>${headerLabel}</th>`;
+        months.forEach(m => html += `<th>${m}</th>`);
+        html += '<th>Total</th></tr></thead><tbody>';
+        sortedRes.forEach(res => {
+            const row = resMonths[res];
+            const total = row.reduce((a,b) => a+b, 0);
+            html += `<tr><td class="res-name">${res}</td>`;
+            row.forEach(v => {
+                const intensity = maxVal > 0 ? v / maxVal : 0;
+                const hc = heatColor(intensity);
+                html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color}">${v > 0 ? Math.round(v) : ''}</td>`;
+            });
+            html += `<td style="font-weight:600">${Math.round(total)}</td></tr>`;
+        });
+        const totals = new Array(12).fill(0);
+        sortedRes.forEach(r => resMonths[r].forEach((v,i) => totals[i] += v));
+        const grandTotal = totals.reduce((a,b) => a+b, 0);
+        html += '<tr style="border-top:2px solid var(--border)"><td class="res-name" style="font-weight:700">TOTAL</td>';
+        totals.forEach(v => html += `<td class="heatmap-cell" style="font-weight:700;color:var(--text)">${v > 0 ? Math.round(v) : ''}</td>`);
+        html += `<td style="font-weight:700">${Math.round(grandTotal)}</td></tr>`;
+        html += '</tbody>';
+        document.getElementById('heatmapTable').innerHTML = html;
+        return;
+    }
+
+    if (heatmapGroup === 'parent') {
+        // Overordnet fase view - group by parent phase (ID % 1000 === 0)
+        const parentMap = {};
+        rawData.forEach(p => {
+            const num = parseInt(p.id, 10);
+            const isParent = !isNaN(num) && num % 1000 === 0;
+            const parentId = isParent ? p.id : getParentPhaseId(p.id);
+            if (!parentMap[parentId]) {
+                const parentPhase = rawData.find(pp => pp.id === parentId);
+                parentMap[parentId] = {name: parentPhase ? parentPhase.name : parentId, totals: new Array(12).fill(0), children: []};
+            }
+            const childTotals = new Array(12).fill(0);
+            p.children.forEach(t => {
+                if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+                const hrsToDistribute = t.hours || t.spent;
+                const s = parseDate(t.start) || parseDate(p.start) || new Date('2026-01-01');
+                const e = parseDate(t.end) || parseDate(p.end) || new Date('2026-12-31');
+                const days = Math.max(1, (e - s) / 86400000);
+                const hoursPerDay = hrsToDistribute / days;
+                let cur = new Date(s);
+                while (cur <= e) {
+                    const m = cur.getMonth();
+                    const daysInMonth = Math.min(
+                        new Date(cur.getFullYear(), m + 1, 0).getDate() - cur.getDate() + 1,
+                        Math.ceil((e - cur) / 86400000) + 1
+                    );
+                    childTotals[m] += hoursPerDay * daysInMonth;
+                    parentMap[parentId].totals[m] += hoursPerDay * daysInMonth;
+                    cur = new Date(cur.getFullYear(), m + 1, 1);
+                }
+            });
+            if (!isParent && childTotals.some(v => v > 0)) {
+                parentMap[parentId].children.push({id: p.id, name: p.name, totals: childTotals});
+            }
+        });
+        let maxVal = 0;
+        Object.values(parentMap).forEach(pm => pm.totals.forEach(v => { if (v > maxVal) maxVal = v; }));
+        const sortedParents = Object.keys(parentMap).sort((a,b) => parseInt(a,10) - parseInt(b,10));
+        let html = '<thead><tr><th>Overordnet fase</th>';
+        months.forEach(m => html += `<th>${m}</th>`);
+        html += '<th>Total</th></tr></thead><tbody>';
+        sortedParents.forEach(pid => {
+            const pm = parentMap[pid];
+            const total = pm.totals.reduce((a,b) => a+b, 0);
+            if (total === 0) return;
+            const hasChildren = pm.children.length > 0;
+            const expanded = expandedHeatmapPhases.has(pid);
+            const arrow = hasChildren ? (expanded ? '\u25BC' : '\u25B6') : '\u00A0\u00A0';
+            html += `<tr style="${hasChildren ? 'cursor:pointer;' : ''}background:rgba(59,130,246,0.05)" ${hasChildren ? `onclick="toggleHeatmapPhase('${pid}')"` : ''}>`;
+            html += `<td class="res-name" style="font-weight:700">${arrow} ${idPfx(pid)}${pm.name}</td>`;
+            pm.totals.forEach(v => {
+                const intensity = maxVal > 0 ? v / maxVal : 0;
+                const hc = heatColor(intensity);
+                html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color};font-weight:600">${v > 0 ? Math.round(v) : ''}</td>`;
+            });
+            html += `<td style="font-weight:700">${Math.round(total)}</td></tr>`;
+            if (expanded && hasChildren) {
+                pm.children.forEach(child => {
+                    const cTotal = child.totals.reduce((a,b) => a+b, 0);
+                    html += `<tr><td class="res-name" style="padding-left:1.5rem">${idPfx(child.id)}${child.name}</td>`;
+                    child.totals.forEach(v => {
+                        const intensity = maxVal > 0 ? v / maxVal : 0;
+                        const hc = heatColor(intensity);
+                        html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color}">${v > 0 ? Math.round(v) : ''}</td>`;
+                    });
+                    html += `<td style="font-weight:600">${Math.round(cTotal)}</td></tr>`;
+                });
+            }
+        });
+        const totals = new Array(12).fill(0);
+        Object.values(parentMap).forEach(pm => pm.totals.forEach((v,i) => totals[i] += v));
+        const grandTotal = totals.reduce((a,b) => a+b, 0);
+        html += '<tr style="border-top:2px solid var(--border)"><td class="res-name" style="font-weight:700">TOTAL</td>';
+        totals.forEach(v => html += `<td class="heatmap-cell" style="font-weight:700;color:var(--text)">${v > 0 ? Math.round(v) : ''}</td>`);
+        html += `<td style="font-weight:700">${Math.round(grandTotal)}</td></tr>`;
+        html += '</tbody>';
+        document.getElementById('heatmapTable').innerHTML = html;
+        return;
+    }
+
+    // Phase-grouped view (default)
+    const phaseData = rawData.map(p => {
+        const resMonths = {};
+        const phaseTotals = new Array(12).fill(0);
+        p.children.forEach(t => {
+            if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+            const hrsToDistribute = t.hours || t.spent;
+            const s = parseDate(t.start) || parseDate(p.start) || new Date('2026-01-01');
+            const e = parseDate(t.end) || parseDate(p.end) || new Date('2026-12-31');
+            const days = Math.max(1, (e - s) / 86400000);
+            const hoursPerDay = hrsToDistribute / days;
+            if (!resMonths[t.res]) resMonths[t.res] = new Array(12).fill(0);
+            let cur = new Date(s);
+            while (cur <= e) {
+                const m = cur.getMonth();
+                const daysInMonth = Math.min(
+                    new Date(cur.getFullYear(), m + 1, 0).getDate() - cur.getDate() + 1,
+                    Math.ceil((e - cur) / 86400000) + 1
+                );
+                resMonths[t.res][m] += hoursPerDay * daysInMonth;
+                phaseTotals[m] += hoursPerDay * daysInMonth;
+                cur = new Date(cur.getFullYear(), m + 1, 1);
+            }
+        });
+        return {id: p.id, name: p.name, resMonths, phaseTotals};
+    });
+    let maxVal = 0;
+    phaseData.forEach(pd => pd.phaseTotals.forEach(v => { if (v > maxVal) maxVal = v; }));
+    phaseData.forEach(pd => Object.values(pd.resMonths).forEach(row => row.forEach(v => { if (v > maxVal) maxVal = v; })));
+
+    let html = '<thead><tr><th>Fase / Res.</th>';
+    months.forEach(m => html += `<th>${m}</th>`);
+    html += '<th>Total</th></tr></thead><tbody>';
+    phaseData.forEach(pd => {
+        const total = pd.phaseTotals.reduce((a,b) => a+b, 0);
+        if (total === 0) return;
+        const expanded = expandedHeatmapPhases.has(pd.id);
+        const arrow = expanded ? '\u25BC' : '\u25B6';
+        html += `<tr style="cursor:pointer;background:rgba(59,130,246,0.05)" onclick="toggleHeatmapPhase('${pd.id}')">`;
+        html += `<td class="res-name" style="font-weight:700">${arrow} ${idPfx(pd.id)}${pd.name}</td>`;
+        pd.phaseTotals.forEach(v => {
+            const intensity = maxVal > 0 ? v / maxVal : 0;
+            const hc = heatColor(intensity);
+            html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color};font-weight:600">${v > 0 ? Math.round(v) : ''}</td>`;
+        });
+        html += `<td style="font-weight:700">${Math.round(total)}</td></tr>`;
+        if (expanded) {
+            Object.keys(pd.resMonths).sort().forEach(res => {
+                const row = pd.resMonths[res];
+                const resTotal = row.reduce((a,b) => a+b, 0);
+                html += `<tr><td class="res-name" style="padding-left:1.5rem">${res}</td>`;
+                row.forEach(v => {
+                    const intensity = maxVal > 0 ? v / maxVal : 0;
+                    const hc = heatColor(intensity);
+                    html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color}">${v > 0 ? Math.round(v) : ''}</td>`;
+                });
+                html += `<td style="font-weight:600">${Math.round(resTotal)}</td></tr>`;
+            });
+        }
+    });
+    const totals = new Array(12).fill(0);
+    phaseData.forEach(pd => pd.phaseTotals.forEach((v,i) => totals[i] += v));
+    const grandTotal = totals.reduce((a,b) => a+b, 0);
+    html += '<tr style="border-top:2px solid var(--border)"><td class="res-name" style="font-weight:700">TOTAL</td>';
+    totals.forEach(v => html += `<td class="heatmap-cell" style="font-weight:700;color:var(--text)">${v > 0 ? Math.round(v) : ''}</td>`);
+    html += `<td style="font-weight:700">${Math.round(grandTotal)}</td></tr>`;
+    html += '</tbody>';
+    document.getElementById('heatmapTable').innerHTML = html;
+}
+
+function renderHeatmapWeekly() {
+    const weeks = [];
+    let d = new Date('2026-01-05');
+    while (d.getFullYear() <= 2026 && weeks.length < 52) {
+        weeks.push({num: weeks.length + 1, start: new Date(d)});
+        d = new Date(d.getTime() + 7 * 86400000);
+    }
+
+    if (heatmapGroup === 'res' || heatmapGroup === 'group') {
+        // Flat resource or resource-group view
+        const resWeeks = {};
+        rawData.forEach(p => p.children.forEach(t => {
+            if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+            const hrsToDistribute = t.hours || t.spent;
+            const key = heatmapGroup === 'group' ? getResGroup(t) : t.res;
+            const s = parseDate(t.start) || parseDate(p.start) || new Date('2026-01-01');
+            const e = parseDate(t.end) || parseDate(p.end) || new Date('2026-12-31');
+            const days = Math.max(1, (e - s) / 86400000);
+            const hoursPerDay = hrsToDistribute / days;
+            if (!resWeeks[key]) resWeeks[key] = new Array(52).fill(0);
+            for (let i = 0; i < 52; i++) {
+                const wStart = weeks[i].start;
+                const wEnd = new Date(wStart.getTime() + 6 * 86400000);
+                const overlapStart = Math.max(s.getTime(), wStart.getTime());
+                const overlapEnd = Math.min(e.getTime(), wEnd.getTime());
+                if (overlapStart <= overlapEnd) {
+                    const overlapDays = (overlapEnd - overlapStart) / 86400000 + 1;
+                    resWeeks[key][i] += hoursPerDay * overlapDays;
+                }
+            }
+        }));
+        const sortedRes = Object.keys(resWeeks).sort();
+        let maxVal = 0;
+        sortedRes.forEach(r => resWeeks[r].forEach(v => { if (v > maxVal) maxVal = v; }));
+        const headerLabel = heatmapGroup === 'group' ? 'Res.Group' : 'Ressource';
+        let html = `<thead><tr><th>${headerLabel}</th>`;
+        weeks.forEach(w => html += `<th style="min-width:28px;font-size:0.6rem">U${w.num}</th>`);
+        html += '<th>Total</th></tr></thead><tbody>';
+        sortedRes.forEach(res => {
+            const row = resWeeks[res];
+            const total = row.reduce((a,b) => a+b, 0);
+            html += `<tr><td class="res-name">${res}</td>`;
+            row.forEach(v => {
+                const intensity = maxVal > 0 ? v / maxVal : 0;
+                const hc = v < 0.5 ? {bg:'transparent',color:'var(--muted)'} : heatColor(intensity);
+                html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color};padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`;
+            });
+            html += `<td style="font-weight:600">${Math.round(total)}</td></tr>`;
+        });
+        const totals = new Array(52).fill(0);
+        sortedRes.forEach(r => resWeeks[r].forEach((v,i) => totals[i] += v));
+        const grandTotal = totals.reduce((a,b) => a+b, 0);
+        html += '<tr style="border-top:2px solid var(--border)"><td class="res-name" style="font-weight:700">TOTAL</td>';
+        totals.forEach(v => html += `<td class="heatmap-cell" style="font-weight:700;color:var(--text);padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`);
+        html += `<td style="font-weight:700">${Math.round(grandTotal)}</td></tr>`;
+        html += '</tbody>';
+        document.getElementById('heatmapTable').innerHTML = html;
+        return;
+    }
+
+    if (heatmapGroup === 'parent') {
+        // Overordnet fase weekly view
+        const parentMap = {};
+        rawData.forEach(p => {
+            const num = parseInt(p.id, 10);
+            const isParent = !isNaN(num) && num % 1000 === 0;
+            const parentId = isParent ? p.id : getParentPhaseId(p.id);
+            if (!parentMap[parentId]) {
+                const parentPhase = rawData.find(pp => pp.id === parentId);
+                parentMap[parentId] = {name: parentPhase ? parentPhase.name : parentId, totals: new Array(52).fill(0), children: []};
+            }
+            const childTotals = new Array(52).fill(0);
+            p.children.forEach(t => {
+                if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+                const hrsToDistribute = t.hours || t.spent;
+                const s = parseDate(t.start) || parseDate(p.start) || new Date('2026-01-01');
+                const e = parseDate(t.end) || parseDate(p.end) || new Date('2026-12-31');
+                const days = Math.max(1, (e - s) / 86400000);
+                const hoursPerDay = hrsToDistribute / days;
+                for (let i = 0; i < 52; i++) {
+                    const wStart = weeks[i].start;
+                    const wEnd = new Date(wStart.getTime() + 6 * 86400000);
+                    const overlapStart = Math.max(s.getTime(), wStart.getTime());
+                    const overlapEnd = Math.min(e.getTime(), wEnd.getTime());
+                    if (overlapStart <= overlapEnd) {
+                        const overlapDays = (overlapEnd - overlapStart) / 86400000 + 1;
+                        childTotals[i] += hoursPerDay * overlapDays;
+                        parentMap[parentId].totals[i] += hoursPerDay * overlapDays;
+                    }
+                }
+            });
+            if (!isParent && childTotals.some(v => v >= 0.5)) {
+                parentMap[parentId].children.push({id: p.id, name: p.name, totals: childTotals});
+            }
+        });
+        let maxVal = 0;
+        Object.values(parentMap).forEach(pm => pm.totals.forEach(v => { if (v > maxVal) maxVal = v; }));
+        const sortedParents = Object.keys(parentMap).sort((a,b) => parseInt(a,10) - parseInt(b,10));
+        let html = '<thead><tr><th>Overordnet fase</th>';
+        weeks.forEach(w => html += `<th style="min-width:28px;font-size:0.6rem">U${w.num}</th>`);
+        html += '<th>Total</th></tr></thead><tbody>';
+        sortedParents.forEach(pid => {
+            const pm = parentMap[pid];
+            const total = pm.totals.reduce((a,b) => a+b, 0);
+            if (total < 0.5) return;
+            const hasChildren = pm.children.length > 0;
+            const expanded = expandedHeatmapPhases.has(pid);
+            const arrow = hasChildren ? (expanded ? '\u25BC' : '\u25B6') : '\u00A0\u00A0';
+            html += `<tr style="${hasChildren ? 'cursor:pointer;' : ''}background:rgba(59,130,246,0.05)" ${hasChildren ? `onclick="toggleHeatmapPhase('${pid}')"` : ''}>`;
+            html += `<td class="res-name" style="font-weight:700">${arrow} ${idPfx(pid)}${pm.name}</td>`;
+            pm.totals.forEach(v => {
+                const intensity = maxVal > 0 ? v / maxVal : 0;
+                const hc = v < 0.5 ? {bg:'transparent',color:'var(--muted)'} : heatColor(intensity);
+                html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color};font-weight:600;padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`;
+            });
+            html += `<td style="font-weight:700">${Math.round(total)}</td></tr>`;
+            if (expanded && hasChildren) {
+                pm.children.forEach(child => {
+                    const cTotal = child.totals.reduce((a,b) => a+b, 0);
+                    html += `<tr><td class="res-name" style="padding-left:1.5rem">${idPfx(child.id)}${child.name}</td>`;
+                    child.totals.forEach(v => {
+                        const intensity = maxVal > 0 ? v / maxVal : 0;
+                        const hc = v < 0.5 ? {bg:'transparent',color:'var(--muted)'} : heatColor(intensity);
+                        html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color};padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`;
+                    });
+                    html += `<td style="font-weight:600">${Math.round(cTotal)}</td></tr>`;
+                });
+            }
+        });
+        const totals = new Array(52).fill(0);
+        Object.values(parentMap).forEach(pm => pm.totals.forEach((v,i) => totals[i] += v));
+        const grandTotal = totals.reduce((a,b) => a+b, 0);
+        html += '<tr style="border-top:2px solid var(--border)"><td class="res-name" style="font-weight:700">TOTAL</td>';
+        totals.forEach(v => html += `<td class="heatmap-cell" style="font-weight:700;color:var(--text);padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`);
+        html += `<td style="font-weight:700">${Math.round(grandTotal)}</td></tr>`;
+        html += '</tbody>';
+        document.getElementById('heatmapTable').innerHTML = html;
+        return;
+    }
+
+    // Phase-grouped view
+    const phaseData = rawData.map(p => {
+        const resWeeks = {};
+        const phaseTotals = new Array(52).fill(0);
+        p.children.forEach(t => {
+            if (!t.res || (t.hours === 0 && t.spent === 0)) return;
+            const hrsToDistribute = t.hours || t.spent;
+            const s = parseDate(t.start) || parseDate(p.start) || new Date('2026-01-01');
+            const e = parseDate(t.end) || parseDate(p.end) || new Date('2026-12-31');
+            const days = Math.max(1, (e - s) / 86400000);
+            const hoursPerDay = hrsToDistribute / days;
+            if (!resWeeks[t.res]) resWeeks[t.res] = new Array(52).fill(0);
+            for (let i = 0; i < 52; i++) {
+                const wStart = weeks[i].start;
+                const wEnd = new Date(wStart.getTime() + 6 * 86400000);
+                const overlapStart = Math.max(s.getTime(), wStart.getTime());
+                const overlapEnd = Math.min(e.getTime(), wEnd.getTime());
+                if (overlapStart <= overlapEnd) {
+                    const overlapDays = (overlapEnd - overlapStart) / 86400000 + 1;
+                    resWeeks[t.res][i] += hoursPerDay * overlapDays;
+                    phaseTotals[i] += hoursPerDay * overlapDays;
+                }
+            }
+        });
+        return {id: p.id, name: p.name, resWeeks, phaseTotals};
+    });
+    let maxVal = 0;
+    phaseData.forEach(pd => pd.phaseTotals.forEach(v => { if (v > maxVal) maxVal = v; }));
+    phaseData.forEach(pd => Object.values(pd.resWeeks).forEach(row => row.forEach(v => { if (v > maxVal) maxVal = v; })));
+
+    let html = '<thead><tr><th>Fase / Res.</th>';
+    weeks.forEach(w => html += `<th style="min-width:28px;font-size:0.6rem">U${w.num}</th>`);
+    html += '<th>Total</th></tr></thead><tbody>';
+    phaseData.forEach(pd => {
+        const total = pd.phaseTotals.reduce((a,b) => a+b, 0);
+        if (total === 0) return;
+        const expanded = expandedHeatmapPhases.has(pd.id);
+        const arrow = expanded ? '\u25BC' : '\u25B6';
+        html += `<tr style="cursor:pointer;background:rgba(59,130,246,0.05)" onclick="toggleHeatmapPhase('${pd.id}')">`;
+        html += `<td class="res-name" style="font-weight:700">${arrow} ${idPfx(pd.id)}${pd.name}</td>`;
+        pd.phaseTotals.forEach(v => {
+            const intensity = maxVal > 0 ? v / maxVal : 0;
+            const hc = v < 0.5 ? {bg:'transparent',color:'var(--muted)'} : heatColor(intensity);
+            html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color};font-weight:600;padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`;
+        });
+        html += `<td style="font-weight:700">${Math.round(total)}</td></tr>`;
+        if (expanded) {
+            Object.keys(pd.resWeeks).sort().forEach(res => {
+                const row = pd.resWeeks[res];
+                const resTotal = row.reduce((a,b) => a+b, 0);
+                html += `<tr><td class="res-name" style="padding-left:1.5rem">${res}</td>`;
+                row.forEach(v => {
+                    const intensity = maxVal > 0 ? v / maxVal : 0;
+                    const hc = v < 0.5 ? {bg:'transparent',color:'var(--muted)'} : heatColor(intensity);
+                    html += `<td class="heatmap-cell" style="background:${hc.bg};color:${hc.color};padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`;
+                });
+                html += `<td style="font-weight:600">${Math.round(resTotal)}</td></tr>`;
+            });
+        }
+    });
+    const totals = new Array(52).fill(0);
+    phaseData.forEach(pd => pd.phaseTotals.forEach((v,i) => totals[i] += v));
+    const grandTotal = totals.reduce((a,b) => a+b, 0);
+    html += '<tr style="border-top:2px solid var(--border)"><td class="res-name" style="font-weight:700">TOTAL</td>';
+    totals.forEach(v => html += `<td class="heatmap-cell" style="font-weight:700;color:var(--text);padding:2px 3px;font-size:0.65rem">${v >= 0.5 ? Math.round(v) : ''}</td>`);
+    html += `<td style="font-weight:700">${Math.round(grandTotal)}</td></tr>`;
+    html += '</tbody>';
+    document.getElementById('heatmapTable').innerHTML = html;
+}
+
+function exportCSV() {
+    const data = getFilteredData();
+    let csv = 'Fase;Opgave;Resource;Estimat;Forbrugt;Rest;Start;Slut;Pct\n';
+    data.forEach(p => {
+        csv += `${p.name};;${p.res||''};${p.hours};${p.spent};${p.rem};${p.start||''};${p.end||''};${p.pct}\n`;
+        p.children.forEach(t => {
+            csv += `${p.name};${t.name};${t.res||''};${t.hours};${t.spent};${t.rem};${t.start||''};${t.end||''};${t.pct}\n`;
+        });
+    });
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'projektplan-export.csv'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function parseDate(str) {
+    if (!str) return null;
+    const parts = str.split('-');
+    if (parts.length === 3) return new Date(str);
+    return null;
+}
+function dateToPct(d) { return ((d - timelineStart) / 86400000 / totalDays) * 100; }
+function fmt(n) { return n === 0 ? '' : n.toLocaleString('da-DK', {maximumFractionDigits:1}); }
+function fmtDate(str) {
+    if (!str) return '-';
+    const d = new Date(str);
+    if (isNaN(d)) return '-';
+    return d.toLocaleDateString('da-DK', {day:'2-digit', month:'short'});
+}
+
+init();
+</script>
+</body>
+</html>
