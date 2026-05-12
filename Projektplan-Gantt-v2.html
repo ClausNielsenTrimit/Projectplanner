@@ -8,6 +8,9 @@
     <meta http-equiv="Expires" content="0">
     <title>Projektplan – ERP Implementation v7</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --bg: #0f172a;
@@ -177,7 +180,65 @@
     </style>
 </head>
 <body>
-<div class="container">
+
+<!-- Login Screen -->
+<div id="loginScreen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1.5rem">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:3rem;text-align:center;max-width:400px;width:90%">
+        <h1 style="font-size:1.6rem;margin-bottom:0.5rem;background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent">Projektplan</h1>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:2rem">ERP Implementation Dashboard</p>
+        <button onclick="googleSignIn()" style="display:inline-flex;align-items:center;gap:0.75rem;background:white;color:#333;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-size:0.95rem;cursor:pointer;font-weight:500;transition:box-shadow 0.2s">
+            <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a23.99 23.99 0 000 21.56l7.98-6.19z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Log ind med Google
+        </button>
+    </div>
+</div>
+
+<!-- Project List Screen -->
+<div id="projectListScreen" style="display:none;min-height:100vh;padding:2rem">
+    <div style="max-width:800px;margin:0 auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+            <div>
+                <h1 style="font-size:1.5rem;background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent">Mine Projekter</h1>
+                <p style="color:var(--muted);font-size:0.85rem" id="projectListUser"></p>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                <button class="btn" onclick="showCreateProject()">+ Nyt projekt</button>
+                <button class="btn btn-ghost" onclick="signOut()" style="font-size:0.8rem">Log ud</button>
+            </div>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+            <button class="btn" id="filterMine" onclick="setProjectFilter('mine')" style="font-size:0.8rem">Mine projekter</button>
+            <button class="btn btn-ghost" id="filterAll" onclick="setProjectFilter('all')" style="font-size:0.8rem">Alle projekter</button>
+        </div>
+        <div id="projectList" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+        <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)">
+            <button class="btn btn-ghost" onclick="openDemoProject()" style="font-size:0.85rem;width:100%;padding:0.6rem">📊 Vis demo-projekt (eksempeldata)</button>
+        </div>
+    </div>
+</div>
+
+<!-- Create Project Dialog -->
+<div id="createProjectDialog" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.6);align-items:center;justify-content:center">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:2rem;max-width:400px;width:90%">
+        <h2 style="font-size:1.1rem;margin-bottom:1rem">Opret nyt projekt</h2>
+        <input type="text" id="newProjectName" placeholder="Projektnavn..." style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.6rem;border-radius:6px;font-size:0.9rem;margin-bottom:1rem">
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+            <button class="btn btn-ghost" onclick="hideCreateProject()">Annuller</button>
+            <button class="btn" onclick="createProject()">Opret</button>
+        </div>
+    </div>
+</div>
+
+<!-- User info bar (shown when logged in) -->
+<div id="userInfo" style="display:none;position:fixed;top:0.75rem;right:1rem;z-index:1000;align-items:center;gap:0.5rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem">
+    <button onclick="backToProjects()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:0.8rem;margin-right:0.3rem" title="Tilbage til projekter">◀ Projekter</button>
+    <span style="border-left:1px solid var(--border);height:16px;margin:0 0.3rem"></span>
+    <img id="userAvatar" src="" style="width:28px;height:28px;border-radius:50%" alt="">
+    <span id="userName" style="font-size:0.8rem;color:var(--muted)"></span>
+    <button onclick="signOut()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;margin-left:0.5rem" title="Log ud">✕</button>
+</div>
+
+<div class="container" style="display:none">
     <div class="header">
         <div>
             <h1>Projektplan – ERP Implementation</h1>
@@ -185,8 +246,13 @@
         </div>
         <div style="text-align:right;">
             <p>Opdateret: 6. maj 2026</p>
-            <p id="dataSourceInfo" style="font-size:0.8rem;color:var(--muted)">📊 Demo data</p>
+            <p id="dataSourceInfo" style="font-size:0.8rem;color:var(--muted)"></p>
         </div>
+    </div>
+
+    <div id="demoBanner" style="background:linear-gradient(90deg,rgba(249,115,22,0.15),rgba(245,158,11,0.15));border:1px solid var(--orange);border-radius:8px;padding:0.6rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;font-size:0.85rem">
+        <span style="font-size:1.3rem">⚠️</span>
+        <span><strong style="color:var(--orange)">Demo data</strong> — Du ser eksempeldata. Klik <strong>📂 Import Excel</strong> for at indlæse dine egne projektdata.</span>
     </div>
 
     <div class="filter-bar">
@@ -218,85 +284,83 @@
         <label class="btn btn-ghost" style="cursor:pointer">📂 Import Excel
             <input type="file" id="excelImport" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
         </label>
+        <button class="btn" onclick="saveCurrentProject()" id="saveProjectBtn" style="display:none">💾 Gem</button>
         <button class="btn-ghost btn" id="toggleDepsBtn" onclick="toggleDeps()">Vis afhængigheder</button>
         <button class="btn-ghost btn" onclick="toggleHelp()">❓ Hjælp</button>
     </div>
 
     <div class="help-panel" id="helpPanel">
         <h2>📖 Brugervejledning – Projektplan Dashboard</h2>
+        <p style="margin-bottom:1rem">Se den fulde dokumentation: <a href="https://trimit-projektplan-viewer.web.app/guide" target="_blank" style="color:var(--blue)">Projektplan Dashboard Guide</a></p>
 
         <h3>1. Overblik</h3>
-        <p>Dashboardet giver et interaktivt overblik over ERP-implementeringsprojektet. Data importeres fra BC/TRIMIT via Excel og visualiseres i flere sektioner: fremdrift, KPI'er, opgavetræ, Gantt-tidslinje, ressourcebelastning og kapacitets-heatmap.</p>
+        <p>Interaktivt web-dashboard til styring og visualisering af ERP-implementeringsprojekter. Kører i browseren via <strong>https://trimit-projektplan-viewer.web.app</strong>. Kræver kun en Google-konto.</p>
 
-        <h3>2. Import af data</h3>
-        <p>Klik <strong>📂 Import Excel</strong> og vælg dit Activities.xlsx eksporteret fra BC/TRIMIT. Følgende kolonner genkendes automatisk:</p>
+        <h3>2. Brugerflow</h3>
+        <p>🔐 Google Login → 📁 Projektliste → + Opret / Åbn projekt → 📂 Import Excel → 📊 Dashboard</p>
+
+        <h3>3. Login og projekter</h3>
         <ul>
-            <li><strong>Activity No.</strong> – Aktivitetsnummer (bruges til fase-hierarki og afhængigheder)</li>
-            <li><strong>Description</strong> – Opgavenavn</li>
-            <li><strong>Type</strong> – "Begin-Total" = faseoverskrift, "Posting" = opgave, "End-Total" = afslutning</li>
-            <li><strong>Resource No.</strong> – Ansvarlig person/team</li>
-            <li><strong>Resource Group No.</strong> – Ressourcegruppe (Konsulent, Udvikler osv.)</li>
-            <li><strong>Estimated Hours</strong> – Budgetterede timer</li>
-            <li><strong>Entered Hours</strong> – Forbrugte timer (registreret)</li>
-            <li><strong>Remaining Hours</strong> – Resterende timer</li>
-            <li><strong>Starting Date / Ending Date</strong> – Planlagt start og slut</li>
-            <li><strong>% Complete</strong> – Færdiggørelsesgrad</li>
-            <li><strong>Kolonne U</strong> – Afhængigheder (refererer til andre aktivitetsnumre)</li>
+            <li><strong>Google Sign-In</strong> – Log ind med din Google-konto</li>
+            <li><strong>Mine projekter</strong> – Viser kun projekter du har oprettet</li>
+            <li><strong>Alle projekter</strong> – Viser alle brugeres projekter (deling er automatisk)</li>
+            <li><strong>+ Nyt projekt</strong> – Opretter et tomt projekt til Excel-import</li>
+            <li><strong>📊 Demo-projekt</strong> – Vis eksempeldata uden at gemme</li>
+            <li><strong>🗑 Slet</strong> – Kun ejeren kan slette et projekt</li>
         </ul>
 
-        <h3>3. KPI-oversigt (tallene forklaret)</h3>
+        <h3>4. Import af data</h3>
+        <p>Klik <strong>📂 Import Excel</strong> og vælg en .xlsx/.xls-fil. Data læses fra det første ark. Kolonner genkendes automatisk via nøgleordsmatching.</p>
         <ul>
-            <li><strong>Estimerede timer</strong> – Samlet antal budgetterede timer på alle synlige opgaver</li>
-            <li><strong>Forbrugte timer</strong> – Timer der er registreret/brugt (fra "Entered Hours")</li>
-            <li><strong>Resterende timer</strong> – Timer der mangler (Estimat minus Forbrugt, eller fra "Remaining Hours")</li>
-            <li><strong>Samlet progression</strong> – Forbrugt / Estimat i procent for hele det synlige projekt</li>
-            <li><strong>Forfaldne opgaver</strong> – Opgaver hvor slutdato er overskredet men % < 100</li>
+            <li><strong>Begin-Total</strong> → Opretter en faseoverskrift</li>
+            <li><strong>Posting</strong> / blank → Opgave under aktuelle fase</li>
+            <li><strong>End-Total</strong> / Total → Ignoreres</li>
+        </ul>
+        <p>Kun <strong>Description</strong> er påkrævet. Øvrige kolonner: Activity No., Type, Resource No., Resource Group No., Estimated Hours, Entered Hours, Remaining Hours, Starting Date, Ending Date, % Complete, Status, Dependencies.</p>
+
+        <h3>5. KPI-oversigt</h3>
+        <ul>
+            <li><strong>Estimerede timer</strong> – Sum af budgetterede timer</li>
+            <li><strong>Forbrugte timer</strong> – Registrerede timer</li>
+            <li><strong>Resterende timer</strong> – Timer der mangler</li>
+            <li><strong>Samlet progression</strong> – Forbrugt / Estimat i procent</li>
+            <li><strong>Forsinkede</strong> – Opgaver med overskredet slutdato (klik for filter)</li>
+            <li><strong>Økonomi</strong> – Budget, forbrugt og resterende beløb (1.250 kr/t)</li>
         </ul>
 
-        <h3>4. Filtrering</h3>
+        <h3>6. Visninger</h3>
         <ul>
-            <li><strong>Resource</strong> – Vis kun opgaver for én bestemt person</li>
-            <li><strong>Fase</strong> – Zoom ind på én projektfase (Begin-Total)</li>
-            <li><strong>Status</strong> – Multi-valg: filtrer på Igangværende, Afsluttet, Ikke startet osv.</li>
+            <li><strong>Faser og opgaver</strong> – Hierarkisk trævisning med expand/collapse, timer, progress-bar, status, resource</li>
+            <li><strong>Gantt-tidslinje</strong> – Visuelle bjælker per fase/opgave. "I dag" markeret med rød linje</li>
+            <li><strong>Ressource-belastning</strong> – Bjælkediagram med timer og % forbrug per resource/fase/gruppe</li>
+            <li><strong>Kapacitets-heatmap</strong> – Tidsfordeling over måneder/uger med farvekodning</li>
+        </ul>
+
+        <h3>7. Filtrering</h3>
+        <ul>
+            <li><strong>Resource</strong> – Filtrer til én person</li>
+            <li><strong>Fase</strong> – Zoom ind på én fase</li>
+            <li><strong>Status</strong> – Multi-select: Igangværende, Afsluttet, Ikke startet</li>
             <li><strong>Søg</strong> – Fritekstsøgning på opgavenavn eller resource</li>
-            <li><strong>Fra/Til</strong> – Juster Gantt-tidslinjen til et bestemt datointerval</li>
+            <li><strong>Fra/Til</strong> – Juster Gantt-tidslinjen</li>
+            <li><strong>Vis datoer / Vis ID</strong> – Toggle ekstra kolonner</li>
         </ul>
 
-        <h3>5. Visninger og sektioner</h3>
+        <h3>8. Grupperinger</h3>
+        <p>Ressource-belastning, Heatmap og Gantt kan grupperes: <strong>Fase</strong>, <strong>Ressource</strong>, <strong>Res.Group</strong>, <strong>Overordnet fase</strong>.</p>
+
+        <h3>9. Afhængigheder</h3>
+        <p>Aktivér "Vis afhængigheder" for at se 🔗-badges i træet og SVG-pile i Gantt fra forudsætningens slut til den afhængige opgaves start.</p>
+
+        <h3>10. Eksport og gem</h3>
         <ul>
-            <li><strong>Projekt fremdrift</strong> – Stor progressbar med samlet % øverst</li>
-            <li><strong>Faser og opgaver</strong> – Hierarkisk trævisning med expand/collapse, timer, progress-bar</li>
-            <li><strong>Gantt-tidslinje</strong> – Visuel tidslinje med bjælker per fase/opgave. Grupperbar: Fase eller Overordnet fase</li>
-            <li><strong>Ressource-belastning</strong> – Bjælkediagram over timer per fase/ressource/gruppe. Viser % forbrug</li>
-            <li><strong>Kapacitets-heatmap</strong> – Tidsfordeling af timer over måneder/uger. Viser belastning per celle</li>
+            <li><strong>📥 CSV</strong> – Download filtreret view som semikolon-separeret fil (Excel-kompatibel)</li>
+            <li><strong>💾 Gem</strong> – Gem projektdata til skyen (Firestore). Sker automatisk ved import.</li>
+            <li><strong>◀ Projekter</strong> – Gå tilbage til projektlisten</li>
         </ul>
 
-        <h3>6. Grupperinger</h3>
-        <p>Både Ressource-belastning og Kapacitets-heatmap kan grupperes på 4 måder:</p>
-        <ul>
-            <li><strong>Fase</strong> – Grupperet under hver projektfase (Begin-Total)</li>
-            <li><strong>Ressource</strong> – Flad liste sorteret efter timer</li>
-            <li><strong>Res.Group</strong> – Grupperet under ressourcegrupper (fx Konsulent, Udvikler)</li>
-            <li><strong>Overordnet fase</strong> – Grupperet under parent-fase (ID afrundet til nærmeste 1000)</li>
-        </ul>
-
-        <h3>7. Afhængigheder</h3>
-        <p>Opgaver kan referere til foregående opgavers aktivitetsnummer (kolonne U). Når "Vis afhængigheder" aktiveres:</p>
-        <ul>
-            <li>Et lilla <strong>🔗</strong>-badge vises på opgaven i træet med tooltip</li>
-            <li>SVG-pile tegnes i Gantt fra forudsætningens slutpunkt til den afhængige opgaves start</li>
-        </ul>
-
-        <h3>8. Eksport</h3>
-        <p>Klik <strong>📥 CSV</strong> for at downloade det aktuelle filtrerede view som semikolon-separeret fil (kan åbnes i Excel).</p>
-
-        <h3>9. Tips</h3>
-        <ul>
-            <li>Filen er selvstændig – del den direkte via mail/Teams uden installation</li>
-            <li>Kræver internetadgang (SheetJS CDN) ved første åbning</li>
-            <li>Pernilles humør gemmes lokalt i browseren (localStorage)</li>
-            <li>Alle sektioner kan foldes sammen ved klik på overskriften</li>
-        </ul>
+        <h3>11. Teknisk</h3>
+        <p>Frontend: ren HTML/JS. Excel-parsing: SheetJS (CDN). Auth: Firebase/Google. Database: Cloud Firestore. Hosting: Firebase Hosting.</p>
         <p class="author">Udarbejdet af Claus Nielsen · Maj 2026</p>
     </div>
 
@@ -308,16 +372,6 @@
                 <span id="projectProgressPct" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white"></span>
             </div>
             <span id="projectProgressText" style="font-size:0.8rem;color:var(--muted);white-space:nowrap"></span>
-        </div>
-        <div style="display:flex;align-items:center;gap:1rem;padding:0.5rem 0;border-top:1px solid var(--border);margin-top:0.5rem">
-            <span style="font-weight:700;font-size:0.9rem;white-space:nowrap">Projektleder Pernilles humør</span>
-            <div style="display:flex;gap:0.75rem">
-                <button onclick="setMood('happy')" id="moodHappy" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Glad">😊</button>
-                <button onclick="setMood('neutral')" id="moodNeutral" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Neutral">😐</button>
-                <button onclick="setMood('sad')" id="moodSad" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Ked af det">😢</button>
-                <button onclick="setMood('angry')" id="moodAngry" style="font-size:2rem;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;padding:0.2rem 0.4rem;transition:all 0.2s" title="Sur">😡</button>
-            </div>
-            <span id="moodLabel" style="font-size:0.85rem;color:var(--muted)"></span>
         </div>
     </div>
 
@@ -661,6 +715,9 @@ const phaseColors = {
     '30000': 'var(--purple)'
 };
 
+// Backup demo data before any modifications
+const demoDataBackup = JSON.parse(JSON.stringify(rawData));
+
 // Timeline config
 const fullTimelineStart = new Date('2026-01-01');
 const fullTimelineEnd = new Date('2026-12-31');
@@ -831,10 +888,11 @@ function rebuildAfterImport() {
     expandedPhases.clear();
     rawData.forEach(p => expandedPhases.add(p.id));
     activeResource = ''; activePhase = ''; activeStatus = new Set();
-    // Update header stats
+    // Update header stats (use children-level sums, consistent with KPI)
     let totalH = 0, totalAct = 0;
-    rawData.forEach(p => { totalAct += p.children.length; totalH += p.hours; });
-    document.querySelector('.header div[style] p:last-child').textContent = `${totalAct} aktiviteter \u00b7 ${Math.round(totalH).toLocaleString('da-DK')} timer estimeret`;
+    rawData.forEach(p => { totalAct += p.children.length; p.children.forEach(t => { totalH += t.hours; }); });
+    document.getElementById('dataSourceInfo').textContent = `📂 ${totalAct} aktiviteter \u00b7 ${Math.round(totalH).toLocaleString('da-DK')} timer estimeret`;
+    document.getElementById('demoBanner').style.display = 'none';
     render();
 }
 
@@ -895,6 +953,10 @@ function init() {
     setHeatmapGroup('fase');
     setResChartGroup('fase');
     setGanttGroup('fase');
+    // Show initial header stats for demo data
+    let totalH = 0, totalAct = 0;
+    rawData.forEach(p => { totalAct += p.children.length; p.children.forEach(t => { totalH += t.hours; }); });
+    document.getElementById('dataSourceInfo').textContent = `📊 Demo data \u00b7 ${totalAct} aktiviteter \u00b7 ${Math.round(totalH).toLocaleString('da-DK')} timer`;
     render();
 }
 
@@ -951,24 +1013,6 @@ function renderProjectProgress(data) {
     document.getElementById('projectProgressPct').textContent = pct + '%';
     document.getElementById('projectProgressText').textContent = `${fmt(totalSpent)} / ${fmt(totalHours)} timer`;
 }
-
-let currentMood = localStorage.getItem('pernilleMood') || '';
-function setMood(mood) {
-    currentMood = mood;
-    localStorage.setItem('pernilleMood', mood);
-    renderMood();
-}
-function renderMood() {
-    const labels = {happy:'Glad – alt kører!', neutral:'Neutral', sad:'Ked af det – udfordringer', angry:'Sur – noget skal fixes!'};
-    ['Happy','Neutral','Sad','Angry'].forEach(m => {
-        const btn = document.getElementById('mood' + m);
-        const active = currentMood === m.toLowerCase();
-        btn.style.border = active ? '2px solid var(--blue)' : '2px solid transparent';
-        btn.style.transform = active ? 'scale(1.3)' : 'scale(1)';
-    });
-    document.getElementById('moodLabel').textContent = labels[currentMood] || '';
-}
-renderMood();
 
 function renderKPIs(data) {
     let totalHours = 0, totalSpent = 0, totalRem = 0, overdueCount = 0;
@@ -2226,7 +2270,249 @@ function fmtDate(str) {
     return d.toLocaleDateString('da-DK', {day:'2-digit', month:'short'});
 }
 
-init();
+// Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyA2gv7_yyeSlKZnujDOXnbe86RkCgDDvCM",
+    authDomain: "trimit-projektplan-viewer.firebaseapp.com",
+    projectId: "trimit-projektplan-viewer",
+    storageBucket: "trimit-projektplan-viewer.firebasestorage.app",
+    messagingSenderId: "778378528877",
+    appId: "1:778378528877:web:2bf0442e460bdd09669764"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const appContainer = document.querySelector('.container');
+const loginScreen = document.getElementById('loginScreen');
+const projectListScreen = document.getElementById('projectListScreen');
+const userInfo = document.getElementById('userInfo');
+const userAvatar = document.getElementById('userAvatar');
+const userName = document.getElementById('userName');
+
+let currentUser = null;
+let currentProjectId = null;
+let projectFilter = 'mine';
+let dashboardInitialized = false;
+
+// --- Auth ---
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        currentUser = user;
+        showProjectList();
+    } else {
+        currentUser = null;
+        currentProjectId = null;
+        showLogin();
+    }
+});
+
+function googleSignIn() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider).catch(err => {
+        alert('Login fejlede: ' + err.message);
+    });
+}
+
+function signOut() {
+    currentProjectId = null;
+    dashboardInitialized = false;
+    firebase.auth().signOut();
+}
+
+function showLogin() {
+    loginScreen.style.display = 'flex';
+    projectListScreen.style.display = 'none';
+    appContainer.style.display = 'none';
+    userInfo.style.display = 'none';
+}
+
+// --- Project List ---
+function showProjectList() {
+    loginScreen.style.display = 'none';
+    appContainer.style.display = 'none';
+    projectListScreen.style.display = '';
+    userInfo.style.display = 'none';
+    document.getElementById('projectListUser').textContent = currentUser.displayName || currentUser.email;
+    loadProjectList();
+}
+
+function setProjectFilter(f) {
+    projectFilter = f;
+    document.getElementById('filterMine').className = f === 'mine' ? 'btn' : 'btn btn-ghost';
+    document.getElementById('filterAll').className = f === 'all' ? 'btn' : 'btn btn-ghost';
+    loadProjectList();
+}
+
+async function loadProjectList() {
+    const list = document.getElementById('projectList');
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem">Indlæser...</p>';
+    try {
+        let query = db.collection('projects').orderBy('updatedAt', 'desc');
+        if (projectFilter === 'mine') {
+            query = query.where('ownerUid', '==', currentUser.uid);
+        }
+        const snap = await query.get();
+        if (snap.empty) {
+            list.innerHTML = '<p style="color:var(--muted);font-size:0.9rem;text-align:center;padding:2rem">Ingen projekter endnu. Klik <strong>+ Nyt projekt</strong> for at oprette et.</p>';
+            return;
+        }
+        list.innerHTML = '';
+        snap.forEach(doc => {
+            const p = doc.data();
+            const isOwner = p.ownerUid === currentUser.uid;
+            const date = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('da-DK', {day:'2-digit', month:'short', year:'numeric'}) : '-';
+            const tasks = p.taskCount || 0;
+            const phases = p.phaseCount || 0;
+            const card = document.createElement('div');
+            card.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;cursor:pointer;transition:border-color 0.15s;display:flex;justify-content:space-between;align-items:center';
+            card.onmouseover = () => card.style.borderColor = 'var(--blue)';
+            card.onmouseout = () => card.style.borderColor = 'var(--border)';
+            card.innerHTML = `
+                <div>
+                    <div style="font-weight:600;font-size:0.95rem">${esc(p.name)}</div>
+                    <div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem">
+                        ${esc(p.ownerName || p.ownerEmail || '')} · ${phases} faser · ${tasks} opgaver · ${date}
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    ${isOwner ? '<button class="btn-ghost btn" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="event.stopPropagation();deleteProject(\'' + doc.id + '\',\'' + esc(p.name) + '\')">🗑</button>' : ''}
+                    <span style="color:var(--blue);font-size:0.9rem">▶</span>
+                </div>`;
+            card.onclick = () => openProject(doc.id);
+            list.appendChild(card);
+        });
+    } catch(err) {
+        list.innerHTML = '<p style="color:var(--red)">Fejl: ' + esc(err.message) + '</p>';
+    }
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function showCreateProject() {
+    document.getElementById('createProjectDialog').style.display = 'flex';
+    document.getElementById('newProjectName').value = '';
+    document.getElementById('newProjectName').focus();
+}
+function hideCreateProject() {
+    document.getElementById('createProjectDialog').style.display = 'none';
+}
+
+async function createProject() {
+    const name = document.getElementById('newProjectName').value.trim();
+    if (!name) return;
+    hideCreateProject();
+    const doc = await db.collection('projects').add({
+        name,
+        ownerUid: currentUser.uid,
+        ownerName: currentUser.displayName || '',
+        ownerEmail: currentUser.email || '',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        phaseCount: 0,
+        taskCount: 0,
+        data: []
+    });
+    openProject(doc.id);
+}
+
+async function deleteProject(id, name) {
+    if (!confirm('Slet projekt "' + name + '"? Dette kan ikke fortrydes.')) return;
+    await db.collection('projects').doc(id).delete();
+    loadProjectList();
+}
+
+// --- Open / Save Project ---
+async function openProject(id) {
+    currentProjectId = id;
+    const doc = await db.collection('projects').doc(id).get();
+    if (!doc.exists) { alert('Projekt ikke fundet.'); return; }
+    const p = doc.data();
+
+    // Load data into rawData
+    rawData.length = 0;
+    if (p.data && p.data.length > 0) {
+        p.data.forEach(phase => rawData.push(phase));
+        document.getElementById('demoBanner').style.display = 'none';
+    }
+    document.getElementById('dataSourceInfo').textContent = p.data && p.data.length > 0
+        ? `📂 ${p.name}`
+        : '📊 Demo data';
+
+    // Show dashboard
+    projectListScreen.style.display = 'none';
+    appContainer.style.display = '';
+    userAvatar.src = currentUser.photoURL || '';
+    userName.textContent = p.name;
+    userInfo.style.display = 'flex';
+    document.getElementById('saveProjectBtn').style.display = '';
+
+    // Update header
+    const h1 = appContainer.querySelector('h1');
+    if (h1) h1.textContent = p.name;
+
+    if (p.data && p.data.length > 0) {
+        rebuildAfterImport();
+    } else {
+        if (!dashboardInitialized) { init(); dashboardInitialized = true; } else { render(); }
+    }
+}
+
+async function saveCurrentProject() {
+    if (!currentProjectId) return;
+    const btn = document.getElementById('saveProjectBtn');
+    btn.textContent = '⏳ Gemmer...';
+    btn.disabled = true;
+    try {
+        let taskCount = 0, phaseCount = rawData.length;
+        rawData.forEach(p => taskCount += p.children.length);
+        await db.collection('projects').doc(currentProjectId).update({
+            data: JSON.parse(JSON.stringify(rawData)),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            phaseCount,
+            taskCount
+        });
+        btn.textContent = '✓ Gemt!';
+        setTimeout(() => { btn.textContent = '💾 Gem'; btn.disabled = false; }, 1500);
+    } catch(err) {
+        alert('Fejl ved gem: ' + err.message);
+        btn.textContent = '💾 Gem';
+        btn.disabled = false;
+    }
+}
+
+function backToProjects() {
+    currentProjectId = null;
+    // Restore demo data
+    rawData.length = 0;
+    demoDataBackup.forEach(p => rawData.push(JSON.parse(JSON.stringify(p))));
+    showProjectList();
+}
+
+function openDemoProject() {
+    currentProjectId = null;
+    rawData.length = 0;
+    demoDataBackup.forEach(p => rawData.push(JSON.parse(JSON.stringify(p))));
+    projectListScreen.style.display = 'none';
+    appContainer.style.display = '';
+    userAvatar.src = currentUser.photoURL || '';
+    userName.textContent = 'Demo projekt';
+    userInfo.style.display = 'flex';
+    document.getElementById('saveProjectBtn').style.display = 'none';
+    document.getElementById('demoBanner').style.display = 'flex';
+    document.getElementById('dataSourceInfo').textContent = '📊 Demo data';
+    const h1 = appContainer.querySelector('h1');
+    if (h1) h1.textContent = 'Projektplan – Demo';
+    if (!dashboardInitialized) { init(); dashboardInitialized = true; } else { rebuildAfterImport(); }
+}
+
+// Override importExcel to auto-save after import
+const _originalRebuildAfterImport = rebuildAfterImport;
+rebuildAfterImport = function() {
+    _originalRebuildAfterImport();
+    if (currentProjectId) {
+        saveCurrentProject();
+    }
+};
 </script>
 </body>
 </html>

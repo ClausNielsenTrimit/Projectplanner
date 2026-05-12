@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projektplan Dashboard — Funktionsbeskrivelse</title>
+<style>
+  :root {
+    --primary: #1a365d;
+    --accent: #2b6cb0;
+    --success: #276749;
+    --warn: #c05621;
+    --danger: #c53030;
+    --bg: #f7fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #2d3748;
+    --muted: #718096;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 30px; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, var(--primary) 0%, #2a4a7f 100%); color: #fff; padding: 40px 30px; margin-bottom: 30px; }
+  .header h1 { font-size: 2em; margin-bottom: 8px; }
+  .header .subtitle { font-size: 1.1em; opacity: 0.85; }
+  .header .meta { margin-top: 12px; font-size: 0.9em; opacity: 0.7; }
+
+  /* TOC */
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px 30px; margin-bottom: 30px; }
+  .toc h2 { font-size: 1.2em; margin-bottom: 12px; color: var(--accent); }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* Sections */
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 24px 30px; margin-bottom: 24px; page-break-inside: avoid; }
+  .section h2 { color: var(--primary); font-size: 1.5em; margin-bottom: 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  .section h3 { color: var(--accent); font-size: 1.15em; margin: 18px 0 10px; }
+  .section h4 { color: var(--text); font-size: 1em; margin: 14px 0 8px; font-weight: 600; }
+  .section p, .section li { margin-bottom: 6px; }
+  .section ul, .section ol { padding-left: 22px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 0.88em; margin: 12px 0; }
+  th { background: var(--primary); color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  tr:hover td { background: #edf2f7; }
+
+  /* Code */
+  code { background: #edf2f7; padding: 2px 6px; border-radius: 3px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 0.9em; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600; }
+  .badge-req { background: #fefcbf; color: var(--warn); }
+  .badge-opt { background: #c6f6d5; color: var(--success); }
+  .badge-new { background: #e9d8fd; color: #553c9a; }
+
+  /* Callout boxes */
+  .callout { padding: 14px 18px; border-radius: 6px; margin: 14px 0; border-left: 4px solid; }
+  .callout-info { background: #ebf8ff; border-color: var(--accent); }
+  .callout-warn { background: #fffaf0; border-color: var(--warn); }
+  .callout-success { background: #f0fff4; border-color: var(--success); }
+  .callout strong { display: block; margin-bottom: 4px; }
+
+  /* Flow steps */
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; align-items: center; }
+  .flow-step { background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.9em; }
+  .flow-arrow { font-size: 1.3em; color: var(--muted); }
+
+  /* Screenshot placeholder */
+  .screenshot { background: #edf2f7; border: 2px dashed var(--border); border-radius: 8px; padding: 40px; text-align: center; color: var(--muted); margin: 16px 0; font-size: 0.9em; }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    .header { background: var(--primary) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section { break-inside: avoid; }
+    th { background: var(--primary) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <h1>📊 Projektplan Dashboard</h1>
+    <div class="subtitle">Interaktivt Gantt- og KPI-dashboard til ERP-implementeringsprojekter</div>
+    <div class="meta">Version 2.0 — Maj 2026 | TRIMIT / Business Central | Firebase Hosting</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <h2>Indholdsfortegnelse</h2>
+  <ol>
+    <li><a href="#overview">Overblik — Hvad er Projektplan Dashboard?</a></li>
+    <li><a href="#auth">Login og brugeradgang</a></li>
+    <li><a href="#projects">Projektadministration — Opret, del og skift</a></li>
+    <li><a href="#import">Import af data fra Excel</a></li>
+    <li><a href="#excel-format">Excel-filens opbygning (detaljeret)</a></li>
+    <li><a href="#kpi">KPI-oversigt og økonomi</a></li>
+    <li><a href="#tree">Faser og opgaver — Trævisning</a></li>
+    <li><a href="#gantt">Gantt-tidslinje</a></li>
+    <li><a href="#resources">Ressourcebelastning</a></li>
+    <li><a href="#heatmap">Kapacitets-heatmap</a></li>
+    <li><a href="#filters">Filtrering og søgning</a></li>
+    <li><a href="#deps">Afhængigheder</a></li>
+    <li><a href="#export">Eksport og gem</a></li>
+    <li><a href="#tech">Teknisk arkitektur</a></li>
+  </ol>
+</div>
+
+<!-- 1. OVERVIEW -->
+<div class="section" id="overview">
+  <h2>1. Overblik — Hvad er Projektplan Dashboard?</h2>
+  <p>Projektplan Dashboard er et selvstændigt, interaktivt web-dashboard til styring og visualisering af ERP-implementeringsprojekter. Det er designet til projektledere, konsulenter og ledelse der har brug for:</p>
+  <ul>
+    <li>Realtidsoverblik over projektets fremdrift, timer og økonomi</li>
+    <li>Gantt-tidslinje med visuelle bjælker per fase og opgave</li>
+    <li>Ressourcebelastning og kapacitets-heatmap</li>
+    <li>Fleksibel import fra BC/TRIMIT via Excel</li>
+    <li>Deling af projekter mellem teammedlemmer via cloud</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <strong>💡 Ingen installation nødvendig</strong>
+    Dashboardet kører direkte i browseren via <a href="https://trimit-projektplan-viewer.web.app" target="_blank">https://trimit-projektplan-viewer.web.app</a>. Det kræver kun en Google-konto for at logge ind.
+  </div>
+
+  <h3>Brugerflow</h3>
+  <div class="flow">
+    <div class="flow-step">🔐 Google Login</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">📁 Projektliste</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">+ Opret / Åbn projekt</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">📂 Import Excel</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">📊 Dashboard</div>
+  </div>
+</div>
+
+<!-- 2. AUTH -->
+<div class="section" id="auth">
+  <h2>2. Login og brugeradgang</h2>
+  <p>Dashboardet bruger <strong>Google Sign-In</strong> via Firebase Authentication. Alle med en Google-konto kan logge ind.</p>
+
+  <table>
+    <tr><th>Funktion</th><th>Beskrivelse</th></tr>
+    <tr><td><strong>Login</strong></td><td>Klik "Log ind med Google" på login-skærmen. En Google popup åbnes.</td></tr>
+    <tr><td><strong>Log ud</strong></td><td>Klik ✕-knappen i brugerbar'en øverst til højre, eller "Log ud" fra projektlisten.</td></tr>
+    <tr><td><strong>Session</strong></td><td>Du forbliver logget ind til du aktivt logger ud. Browseren husker din session.</td></tr>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>⚠️ Adgangsstyring</strong>
+    Alle autentificerede brugere kan se alle projekter. Kun ejeren af et projekt kan slette det. Overvej at begrænse Google-domæner i Firebase Console hvis adgang skal indskrænkes.
+  </div>
+</div>
+
+<!-- 3. PROJECTS -->
+<div class="section" id="projects">
+  <h2>3. Projektadministration — Opret, del og skift</h2>
+  <p>Efter login præsenteres du for projektlisten. Herfra kan du oprette nye projekter, åbne eksisterende eller se demo-data.</p>
+
+  <h3>Projektliste-funktioner</h3>
+  <table>
+    <tr><th>Knap / Element</th><th>Funktion</th></tr>
+    <tr><td><strong>+ Nyt projekt</strong></td><td>Opretter et nyt tomt projekt. Du angiver et projektnavn og kan derefter importere Excel-data.</td></tr>
+    <tr><td><strong>Mine projekter</strong></td><td>Filtrerer listen til kun at vise projekter du selv har oprettet.</td></tr>
+    <tr><td><strong>Alle projekter</strong></td><td>Viser alle projekter oprettet af alle brugere — nyttigt for samarbejde.</td></tr>
+    <tr><td><strong>📊 Vis demo-projekt</strong></td><td>Åbner dashboardet med indbyggede eksempeldata. Gemmes ikke til skyen.</td></tr>
+    <tr><td><strong>🗑</strong></td><td>Sletter projektet permanent. Kun synlig for ejeren. Kræver bekræftelse.</td></tr>
+    <tr><td><strong>▶ Klik på projektkort</strong></td><td>Åbner projektet i dashboardet.</td></tr>
+  </table>
+
+  <h3>Projektinformation på kortet</h3>
+  <p>Hvert projektkort viser:</p>
+  <ul>
+    <li><strong>Projektnavn</strong> — det navn du angav ved oprettelse</li>
+    <li><strong>Ejer</strong> — hvem der oprettede projektet</li>
+    <li><strong>Antal faser og opgaver</strong> — opdateres ved hvert gem</li>
+    <li><strong>Sidst opdateret</strong> — dato for seneste gem</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>✅ Deling er automatisk</strong>
+    Alle autentificerede brugere kan se og åbne alle projekter under "Alle projekter". Ingen invitation eller deling nødvendig.
+  </div>
+</div>
+
+<!-- 4. IMPORT -->
+<div class="section" id="import">
+  <h2>4. Import af data fra Excel</h2>
+  <p>Klik <strong>📂 Import Excel</strong> i filterbar'en og vælg en <code>.xlsx</code> eller <code>.xls</code> fil. Data læses fra det <strong>første ark</strong>. Første række skal indeholde kolonneoverskrifter.</p>
+
+  <h3>Hvad sker der ved import?</h3>
+  <ol>
+    <li>Filen parses med SheetJS (kører lokalt i browseren — intet sendes til server)</li>
+    <li>Kolonnenavne genkendes automatisk via nøgleordsmatching (case-insensitiv)</li>
+    <li>Rækker med <code>Type = Begin-Total</code> oprettes som <strong>faser</strong></li>
+    <li>Alle andre rækker (Posting, blank) bliver <strong>opgaver</strong> under den aktuelle fase</li>
+    <li><code>End-Total</code>, <code>End</code> og <code>Total</code> rækker ignoreres</li>
+    <li>Dashboardet genberegner alle KPI'er, Gantt og diagrammer</li>
+    <li>Data gemmes automatisk til Firestore (sky-database)</li>
+  </ol>
+
+  <div class="callout callout-info">
+    <strong>💡 BC/TRIMIT-eksport</strong>
+    Eksportér aktivitetslisten fra BC/TRIMIT-projektet som Excel. Standardkolonnenavne fra BC genkendes automatisk (Activity No., Description, Type, Estimated Hours, Entered Hours, osv.).
+  </div>
+</div>
+
+<!-- 5. EXCEL FORMAT -->
+<div class="section" id="excel-format">
+  <h2>5. Excel-filens opbygning (detaljeret)</h2>
+  <p>Filen skal have <strong>én række per aktivitet</strong> med kolonneoverskrifter i række 1. Rækkefølgen af kolonner er ligegyldig — systemet genkender dem ud fra navne.</p>
+
+  <h3>Hierarki via Type-kolonnen</h3>
+  <table>
+    <tr><th>Type-værdi</th><th>Resultat</th><th>Beskrivelse</th></tr>
+    <tr><td><code>Begin-Total</code> / <code>Begin</code></td><td><strong>Faseoverskrift</strong></td><td>Opretter en ny fase. Alle efterfølgende rækker bliver børn.</td></tr>
+    <tr><td><code>Posting</code> / blank / andet</td><td><strong>Opgave</strong></td><td>Tilføjes som opgave under aktuelle fase.</td></tr>
+    <tr><td><code>End-Total</code> / <code>End</code> / <code>Total</code></td><td><strong>Ignoreres</strong></td><td>Summerings- og afslutningsrækker springes over.</td></tr>
+  </table>
+  <p>Rækker der kommer <em>før</em> den første "Begin-Total" oprettes automatisk som en selvstændig fase.</p>
+
+  <h3>Kolonner der genkendes</h3>
+  <p>Kolonnenavne er fleksible — systemet matcher på nøgleord. Kun <strong>Description</strong> er påkrævet.</p>
+  <table>
+    <tr><th>Kolonne</th><th>Status</th><th>Gyldige navne (eksempler)</th><th>Beskrivelse</th></tr>
+    <tr><td><strong>Activity No.</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Activity No., Aktivitetsnr, No., ID</td><td>Unikt nummer. Bruges til hierarki og afhængigheder.</td></tr>
+    <tr><td><strong>Description</strong></td><td><span class="badge badge-req">Påkrævet</span></td><td>Description, Beskrivelse, Name, Opgave</td><td>Opgavens eller fasens navn.</td></tr>
+    <tr><td><strong>Type</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Type, Activity Type</td><td>Begin-Total, Posting, End-Total.</td></tr>
+    <tr><td><strong>Resource No.</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Resource No., Resource, Ressource, Medarbejder</td><td>Ansvarlig person/team.</td></tr>
+    <tr><td><strong>Resource Group No.</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Resource Group, Res. Group, Ressourcegruppe</td><td>Gruppe (Konsulent, Udvikler osv.).</td></tr>
+    <tr><td><strong>Estimated Hours</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Estimated Hours, Estimat, Budget Hours</td><td>Budgetterede timer (tal).</td></tr>
+    <tr><td><strong>Entered Hours</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Entered Hours, Spent, Forbrugt, Actual</td><td>Registrerede/forbrugte timer.</td></tr>
+    <tr><td><strong>Remaining Hours</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Remaining Hours, Remaining, Rest</td><td>Resterende timer.</td></tr>
+    <tr><td><strong>Starting Date</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Starting Date, Start, Fra</td><td>Planlagt startdato.</td></tr>
+    <tr><td><strong>Ending Date</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Ending Date, End, Slut, Til</td><td>Planlagt slutdato.</td></tr>
+    <tr><td><strong>% Complete</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>% Complete, Pct, Progress, Procent, Færdig</td><td>Færdiggørelse 0–100.</td></tr>
+    <tr><td><strong>Status</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Status, State, Tilstand</td><td>Opgavestatus (fritekst).</td></tr>
+    <tr><td><strong>Dependencies</strong></td><td><span class="badge badge-opt">Valgfri</span></td><td>Dependencies, Afhængighed, Predecessor</td><td>Kommaseparerede Activity No.-referencer.</td></tr>
+  </table>
+
+  <h3>Eksempel på minimal Excel-fil</h3>
+  <table>
+    <tr><th>Activity No.</th><th>Description</th><th>Type</th><th>Estimated Hours</th><th>Entered Hours</th><th>Starting Date</th><th>Ending Date</th></tr>
+    <tr><td><strong>1000</strong></td><td><strong>Fase 1 – Analyse</strong></td><td><strong>Begin-Total</strong></td><td>100</td><td>80</td><td>01-01-2026</td><td>31-03-2026</td></tr>
+    <tr><td>1010</td><td>Kravspecifikation</td><td>Posting</td><td>40</td><td>40</td><td>01-01-2026</td><td>31-01-2026</td></tr>
+    <tr><td>1020</td><td>GAP-analyse</td><td>Posting</td><td>60</td><td>40</td><td>01-02-2026</td><td>31-03-2026</td></tr>
+    <tr><td style="color:var(--muted)">1099</td><td style="color:var(--muted)">Fase 1 – Total</td><td style="color:var(--muted)">End-Total</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td><strong>2000</strong></td><td><strong>Fase 2 – Udvikling</strong></td><td><strong>Begin-Total</strong></td><td>200</td><td>50</td><td>01-04-2026</td><td>30-09-2026</td></tr>
+    <tr><td>2010</td><td>Kerneudvikling</td><td>Posting</td><td>120</td><td>30</td><td>01-04-2026</td><td>31-07-2026</td></tr>
+  </table>
+  <p style="font-size:0.88em; color:var(--muted)">Grå rækker (End-Total) ignoreres ved import. Timer-kolonner skal være numeriske.</p>
+</div>
+
+<!-- 6. KPI -->
+<div class="section" id="kpi">
+  <h2>6. KPI-oversigt og økonomi</h2>
+  <p>KPI-sektionen viser nøgletal beregnet fra de aktuelt viste (filtrerede) opgaver.</p>
+
+  <h3>Projektfremdrift</h3>
+  <p>Øverst vises en stor progressbar med samlet færdiggørelsesprocent: <code>Forbrugte timer / Estimerede timer × 100</code>.</p>
+
+  <h3>KPI-kort</h3>
+  <table>
+    <tr><th>KPI</th><th>Farve</th><th>Beregning</th></tr>
+    <tr><td><strong>Estimerede timer</strong></td><td>🔵 Blå</td><td>Sum af alle opgavers "Estimated Hours"</td></tr>
+    <tr><td><strong>Forbrugte timer</strong></td><td>🟢 Grøn</td><td>Sum af alle opgavers "Entered Hours"</td></tr>
+    <tr><td><strong>Resterende timer</strong></td><td>🟡 Gul</td><td>Sum af alle opgavers "Remaining Hours"</td></tr>
+    <tr><td><strong>Samlet progression</strong></td><td>🟣 Lilla</td><td>Forbrugt / Estimat i procent</td></tr>
+    <tr><td><strong>Forsinkede</strong></td><td>🔴 Rød</td><td>Antal opgaver hvor slutdato er overskredet og % &lt; 100. Klik for at filtrere.</td></tr>
+    <tr><td><strong>Faser vist</strong></td><td>🔵 Cyan</td><td>Antal synlige faser efter filtrering</td></tr>
+  </table>
+
+  <h3>Økonomiske KPI'er</h3>
+  <p>Under de primære KPI'er vises økonomiske nøgletal baseret på en fast timesats (standard: 1.250 kr/t):</p>
+  <ul>
+    <li><strong>Budget</strong> — Estimerede timer × timesats</li>
+    <li><strong>Forbrugt beløb</strong> — Forbrugte timer × timesats</li>
+    <li><strong>Resterende beløb</strong> — Resterende timer × timesats</li>
+    <li><strong>Rest af budget</strong> — Budget minus forbrugt, med ✓/⚠ indikator</li>
+  </ul>
+</div>
+
+<!-- 7. TREE -->
+<div class="section" id="tree">
+  <h2>7. Faser og opgaver — Trævisning</h2>
+  <p>Opgavetræet viser alle faser og opgaver i en hierarkisk tabelvisning med expand/collapse.</p>
+
+  <h3>Kolonner i trævisningen</h3>
+  <table>
+    <tr><th>Kolonne</th><th>Beskrivelse</th></tr>
+    <tr><td><strong>Opgave</strong></td><td>Fasenavn (klik for expand/collapse) eller opgavenavn</td></tr>
+    <tr><td><strong>Timer</strong></td><td>Estimerede timer</td></tr>
+    <tr><td><strong>Forbrugt</strong></td><td>Registrerede timer</td></tr>
+    <tr><td><strong>Rest.</strong></td><td>Resterende timer</td></tr>
+    <tr><td><strong>Antal</strong></td><td>Antal opgaver i fasen (kun på faser)</td></tr>
+    <tr><td><strong>Start / Slut</strong></td><td>Datoer (valgfrie kolonner — aktiver med "Vis datoer")</td></tr>
+    <tr><td><strong>Indikator</strong></td><td>⚠ for forsinkede faser med antal</td></tr>
+    <tr><td><strong>Status</strong></td><td>Opgavestatus og evt. "ikke startet" / "startforsinkelse" badges</td></tr>
+    <tr><td><strong>Resource</strong></td><td>Ansvarlig person</td></tr>
+    <tr><td><strong>Progression</strong></td><td>Progressbar med procent</td></tr>
+  </table>
+
+  <h3>Valgfrie visninger</h3>
+  <ul>
+    <li><strong>Vis datoer</strong> — Tilføjer Start- og Slut-kolonner. Overskredet dato markeres med rød.</li>
+    <li><strong>Vis ID</strong> — Tilføjer Activity No.-kolonnen.</li>
+  </ul>
+</div>
+
+<!-- 8. GANTT -->
+<div class="section" id="gantt">
+  <h2>8. Gantt-tidslinje</h2>
+  <p>Gantt-sektionen viser en visuel tidslinje med farvede bjælker per fase og opgave. En rød lodret linje markerer "i dag".</p>
+
+  <h3>Funktioner</h3>
+  <ul>
+    <li><strong>Farvekodning</strong> — Hver fase har sin egen farve, genbrugt fra opgavetræet</li>
+    <li><strong>Statuskolonne</strong> — Viser opgavestatus til venstre for bjælken</li>
+    <li><strong>Expand/collapse</strong> — Klik på en fase for at folde dens opgaver ud/ind</li>
+    <li><strong>Datointerval</strong> — Juster med Fra/Til-felterne i filterbaren</li>
+    <li><strong>Gruppering</strong> — Skift mellem "Fase" og "Overordnet fase" med knapperne</li>
+  </ul>
+
+  <h3>Gantt-farveforklaring</h3>
+  <table>
+    <tr><th>Farve</th><th>Betydning</th></tr>
+    <tr><td>🔵 Blå</td><td>Opstart</td></tr>
+    <tr><td>🟢 Grøn</td><td>Design / Test</td></tr>
+    <tr><td>🟣 Lilla</td><td>Udvikling på tværs</td></tr>
+    <tr><td>🟡 Gul</td><td>Finans / Salg / Køb / Lager</td></tr>
+    <tr><td>🩷 Pink</td><td>Portal</td></tr>
+    <tr><td>🟠 Orange</td><td>Go-Live</td></tr>
+    <tr><td>⚪ Grå</td><td>Styring / Møder / Arkitekt</td></tr>
+    <tr><td>🔴 Rød linje</td><td>Dags dato ("I dag")</td></tr>
+  </table>
+</div>
+
+<!-- 9. RESOURCES -->
+<div class="section" id="resources">
+  <h2>9. Ressourcebelastning</h2>
+  <p>Bjælkediagram der viser timer per ressource/fase/gruppe med procentvis forbrug.</p>
+
+  <h3>Grupperingsmuligheder</h3>
+  <table>
+    <tr><th>Gruppering</th><th>Beskrivelse</th></tr>
+    <tr><td><strong>Fase</strong></td><td>Grupperet under hver projektfase (Begin-Total)</td></tr>
+    <tr><td><strong>Ressource</strong></td><td>Flad liste sorteret efter timer — viser alle ressourcer</td></tr>
+    <tr><td><strong>Res.Group</strong></td><td>Grupperet under ressourcegrupper (fx Konsulent, Udvikler)</td></tr>
+    <tr><td><strong>Overordnet fase</strong></td><td>Grupperet under parent-fase (ID afrundet til nærmeste 1000)</td></tr>
+  </table>
+
+  <p>Hver bjælke viser: estimerede timer (blå), forbrugte timer (grøn/rød), og procenttal. Rød bjælke indikerer overforbrug.</p>
+</div>
+
+<!-- 10. HEATMAP -->
+<div class="section" id="heatmap">
+  <h2>10. Kapacitets-heatmap</h2>
+  <p>Heatmappet viser fordelingen af timer over tid som et farvekort. Mørke celler = høj belastning.</p>
+
+  <h3>Tidsintervaller</h3>
+  <ul>
+    <li><strong>Måned</strong> — Én kolonne per måned</li>
+    <li><strong>Uge</strong> — Én kolonne per uge (mere detaljeret, men bredere)</li>
+  </ul>
+
+  <h3>Grupperingsmuligheder</h3>
+  <p>Samme 4 grupperinger som Ressourcebelastning: Fase, Ressource, Res.Group, Overordnet fase.</p>
+
+  <div class="callout callout-info">
+    <strong>💡 Expand/collapse</strong>
+    Klik på en gruppe-overskrift for at folde dens detaljer ud. Knappen "Fold alle ud/ind" påvirker alle grupper samtidig.
+  </div>
+</div>
+
+<!-- 11. FILTERS -->
+<div class="section" id="filters">
+  <h2>11. Filtrering og søgning</h2>
+  <p>Filterbaren øverst giver flere måder at indsnævre data på. Alle filtre påvirker samtlige sektioner (KPI'er, træ, Gantt, ressourcer, heatmap).</p>
+
+  <table>
+    <tr><th>Filter</th><th>Type</th><th>Beskrivelse</th></tr>
+    <tr><td><strong>Resource</strong></td><td>Dropdown</td><td>Vis kun opgaver for én bestemt person</td></tr>
+    <tr><td><strong>Fase</strong></td><td>Dropdown</td><td>Zoom ind på én projektfase</td></tr>
+    <tr><td><strong>Status</strong></td><td>Multi-select</td><td>Filtrer på: Igangværende, Afsluttet, Ikke startet osv.</td></tr>
+    <tr><td><strong>Søg</strong></td><td>Fritekst</td><td>Søg på opgavenavn eller resource (realtid)</td></tr>
+    <tr><td><strong>Fra / Til</strong></td><td>Dato</td><td>Juster Gantt-tidslinjen til et bestemt datointerval</td></tr>
+    <tr><td><strong>Forsinkede (KPI-klik)</strong></td><td>Toggle</td><td>Klik på "Forsinkede" KPI-kortet for kun at vise forsinkede opgaver</td></tr>
+  </table>
+
+  <h3>Yderligere visningskontroller</h3>
+  <ul>
+    <li><strong>Fold sektioner ud/ind</strong> — Collapse/expand alle dashboard-sektioner</li>
+    <li><strong>Vis datoer</strong> — Toggle start/slut-kolonner i trævisningen</li>
+    <li><strong>Vis ID</strong> — Toggle Activity No.-kolonnen</li>
+    <li><strong>Reset</strong> — Nulstiller datointerval til default (januar–december)</li>
+  </ul>
+</div>
+
+<!-- 12. DEPS -->
+<div class="section" id="deps">
+  <h2>12. Afhængigheder</h2>
+  <p>Opgaver kan referere til andre opgavers aktivitetsnummer som forudsætninger. Disse defineres i Dependencies-kolonnen i Excel (kommaseparerede ID'er).</p>
+
+  <h3>Når "Vis afhængigheder" aktiveres:</h3>
+  <ul>
+    <li>Et lilla <strong>🔗</strong> badge vises på opgaven i træet med tooltip der viser forudsætningen</li>
+    <li>SVG-pile tegnes i Gantt-tidslinjen fra forudsætningens slutpunkt til den afhængige opgaves start</li>
+    <li>Afhængigheder er visuelle — de blokerer ikke automatisk</li>
+  </ul>
+</div>
+
+<!-- 13. EXPORT -->
+<div class="section" id="export">
+  <h2>13. Eksport og gem</h2>
+
+  <h3>Eksport til CSV</h3>
+  <p>Klik <strong>📥 CSV</strong> for at downloade det aktuelle filtrerede view som en semikolon-separeret fil. Filen kan åbnes direkte i Excel.</p>
+
+  <h3>Gem til sky</h3>
+  <p>Klik <strong>💾 Gem</strong> for at gemme aktuelle projektdata til Firestore (Google Cloud). Data gemmes også automatisk ved Excel-import.</p>
+
+  <table>
+    <tr><th>Handling</th><th>Hvad gemmes</th></tr>
+    <tr><td><strong>📂 Import Excel</strong></td><td>Data parses og gemmes automatisk til Firestore</td></tr>
+    <tr><td><strong>💾 Gem</strong></td><td>Gemmer aktuelle data manuelt (brugt hvis data er ændret lokalt)</td></tr>
+    <tr><td><strong>📥 CSV</strong></td><td>Eksporterer det filtrerede view — gemmes ikke til sky</td></tr>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>⚠️ Demo-projekt gemmes ikke</strong>
+    Hvis du åbner demo-projektet, er Gem-knappen skjult. Demo-data er kun til visning og kan ikke ændres i skyen.
+  </div>
+</div>
+
+<!-- 14. TECH -->
+<div class="section" id="tech">
+  <h2>14. Teknisk arkitektur</h2>
+
+  <h3>Stack</h3>
+  <table>
+    <tr><th>Komponent</th><th>Teknologi</th><th>Formål</th></tr>
+    <tr><td><strong>Frontend</strong></td><td>Ren HTML/CSS/JS (single file)</td><td>Dashboard UI, diagrammer, Gantt</td></tr>
+    <tr><td><strong>Excel-parsing</strong></td><td>SheetJS (CDN)</td><td>Læser .xlsx/.xls filer i browseren</td></tr>
+    <tr><td><strong>Authentication</strong></td><td>Firebase Auth (Google)</td><td>Google Sign-In</td></tr>
+    <tr><td><strong>Database</strong></td><td>Cloud Firestore</td><td>Projektdata, brugerinformation</td></tr>
+    <tr><td><strong>Hosting</strong></td><td>Firebase Hosting</td><td>Statisk hosting med SSL</td></tr>
+  </table>
+
+  <h3>Firestore-struktur</h3>
+  <table>
+    <tr><th>Collection</th><th>Dokument</th><th>Felter</th></tr>
+    <tr>
+      <td><code>projects</code></td>
+      <td>Auto-ID</td>
+      <td>
+        <code>name</code>, <code>ownerUid</code>, <code>ownerName</code>, <code>ownerEmail</code>,
+        <code>createdAt</code>, <code>updatedAt</code>, <code>phaseCount</code>, <code>taskCount</code>,
+        <code>data[]</code> (array af faser med børn)
+      </td>
+    </tr>
+  </table>
+
+  <h3>Firestore Security Rules</h3>
+  <table>
+    <tr><th>Operation</th><th>Regel</th></tr>
+    <tr><td><strong>Read</strong></td><td>Alle autentificerede brugere</td></tr>
+    <tr><td><strong>Create</strong></td><td>Autentificeret + <code>ownerUid</code> matcher brugerens UID</td></tr>
+    <tr><td><strong>Update</strong></td><td>Alle autentificerede brugere</td></tr>
+    <tr><td><strong>Delete</strong></td><td>Kun ejer (<code>ownerUid == auth.uid</code>)</td></tr>
+  </table>
+
+  <h3>URL</h3>
+  <p>Live: <a href="https://trimit-projektplan-viewer.web.app" target="_blank">https://trimit-projektplan-viewer.web.app</a></p>
+  <p>Firebase Console: <a href="https://console.firebase.google.com/project/trimit-projektplan-viewer" target="_blank">console.firebase.google.com/project/trimit-projektplan-viewer</a></p>
+
+  <div class="callout callout-info">
+    <strong>💡 Selvstændig fil</strong>
+    HTML-filen kan også bruges offline (uden Firebase) — login-skærmen springes over, og demo-data vises. Perfekt til lokal demo eller distribution via mail/Teams.
+  </div>
+</div>
+
+<div style="text-align:center; padding: 30px 0; color: var(--muted); font-size: 0.85em; border-top: 1px solid var(--border); margin-top: 10px;">
+  Udarbejdet af Claus Nielsen · TRIMIT · Maj 2026
+</div>
+
+</div>
+</body>
+</html>
